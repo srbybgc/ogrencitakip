@@ -164,3 +164,7 @@ kontrol edilmelidir.
 Bu dosya sohbet geçmişinin yerine geçecek proje hafızasıdır. Yeni bir karar alındığında bu dosya güncellenmelidir. Bir özellik konuşmada kararlaştırıldıysa, yalnızca son kullanıcı mesajına bakarak kapsam daraltılmamalıdır.
 
 Özellikle "sadece Excel" yaklaşımı yanlıştır: öğrenci toplu veri aktarımı XLS/XLSX yanında CSV ve düz metin desteğine sahip olmalıdır.
+
+## 15. 2026-09-10 geliştirme notu
+
+Çoklu öğrenci aktarımı için hazırlanan GitHub Actions yaması `70e0d4c` commit'inde workflow olarak eklendi; Build ve Pages bu commit için başarılı oldu, ancak workflow'un kendisi docs değişikliği tetikleyicisine bağlı olduğundan henüz kaynak dosyalara uygulanmadı. Bir sonraki adım bu workflow'u tetikleyip oluşan kaynak değişikliklerini doğrulamaktır.
