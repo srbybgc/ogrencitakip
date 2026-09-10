@@ -1,4 +1,5 @@
 import { checkIntegrity } from './domain'
+import { checkStudentRecordIntegrity } from './studentRecords'
 
 const read = (key, fallback) => {
   try {
@@ -15,9 +16,13 @@ export function repairStoredData() {
   const groups = read('ot-groups', [])
   const schedule = read('ot-schedule', [])
   const documents = read('ot-documents', [])
+  const studentRecords = read('ot-student-records', [])
   const result = checkIntegrity(classes, groups, schedule, documents)
   if (result.schedule.length !== schedule.length) localStorage.setItem('ot-schedule', JSON.stringify(result.schedule))
   if (result.documents.length !== documents.length) localStorage.setItem('ot-documents', JSON.stringify(result.documents))
+
+  const recordResult = checkStudentRecordIntegrity(classes, studentRecords)
+  if (!recordResult.ok) localStorage.setItem('ot-student-records', JSON.stringify(recordResult.records))
 
   const classIds = new Set(classes.map(c => c.id))
   const cleanedGroups = groups
