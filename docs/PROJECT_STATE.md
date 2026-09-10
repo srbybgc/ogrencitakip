@@ -17,16 +17,19 @@ Firestore kullanıcı altında: `classes`, `groups`, `schedule`, `documents`, `s
 - Sınıflar Türkçe alfabetik sırada, doğal/numeric karşılaştırmayla gösterilir (`4A`, `4B`, `4C`, `4D`).
 - Öğrenciler ad, sonra soyada göre Türkçe alfabetik sıralanır.
 - Yinelenen sınıf/öğrenci engellenir.
+- Firestore'dan gelen kayıtlar da senkronizasyon sırasında aynı sıralama kuralından geçirilir; böylece mevcut verinin kayıt ekleme sırasına göre ekranda yer değiştirmesi engellenir.
 
 ## Ana sayfa ve ders programı
 - Gün seçimi, haftalık ders programı, sınıflar ve belgeler bulunur.
 - O anda işlenen dersin sınıfı öne çıkar.
 - Pazartesi-Cuma ve aynı sınıfta çakışan ders kontrolü vardır.
+- Ana sayfada sınıf veya öğrenci adına göre arama vardır.
 
 ## Öğrenci işlemleri
 - Manuel ve toplu öğrenci ekleme.
-- Öğrenci detayında not, olay/görüşme ve yoklama (`Geldi`, `Gelmedi`, `İzinli`) geçmişi.
-- Öğrenci belgeleri ve tarihli kayıtlar.
+- Öğrenci detayında kişisel bilgiler düzenlenebilir.
+- Öğrenci kayıt arayüzü not odaklıdır; notlar yıldızlanabilir, düzenlenme tarihi saklanır ve en yeniden eskiye sıralanır.
+- Öğrenci belgeleri ve tarihli not kayıtları.
 - Öğrenci silinince ilişkili kayıtların yetim kalmaması hedeflenir.
 
 ## Toplu aktarım
@@ -40,7 +43,7 @@ Firestore kullanıcı altında: `classes`, `groups`, `schedule`, `documents`, `s
 ## Arşiv ve çöp kutusu
 - Aktif sınıflar arşivlenebilir; arşivlenen sınıflar aktif listelerden gizlenir.
 - Arşivden geri alma vardır.
-- Alt solda **Arşiv** ve **Çöp Kutusu** erişimi vardır.
+- Arşiv ve Çöp Kutusu modül gibi tam sayfa görünümünde açılır.
 - Çöp kutusu silinen sınıf, öğrenci, grup, ders ve belge değişikliklerini çalışma oturumu içinde yakalar; sınıf/öğrenci silinmelerinde ilişkili grup/ders/belge/kayıt snapshot'ı da saklanır.
 - Geri yükleme ve çöp kutusunu boşaltma vardır.
 - Çöp kutusu Firestore'da `trash` koleksiyonuyla kullanıcıya özel senkronize edilir.
@@ -51,10 +54,13 @@ Firestore kullanıcı altında: `classes`, `groups`, `schedule`, `documents`, `s
 - Grup sınıf ID'leri temizlenir.
 - Firestore senkronizasyonu serialized queue ile yapılır.
 - Bozuk localStorage verisi uygulamayı düşürmez.
+- Sınıf ve öğrenci sıralaması hem yerel bütünlük onarımında hem Firestore ilk veri yüklemesinde normalize edilir.
 
 ## UI ve kalite
 - Türkçe, mobil/tablet/masaüstü.
 - Boş ekran yerine anlaşılır hata/boş durumları.
+- Arayüz için yumuşak mint/yeşil, kırık beyaz ve açık pastel tonlardan oluşan modern tema eklendi.
+- Sınıf kartları daha ferah, yuvarlatılmış ve düşük kontrastlı gölgelerle tasarlandı; mevcut işlevsel yerleşim korunur.
 - `npm test` ve `npm run build` her önemli değişiklikte çalıştırılır; GitHub Actions Build ve Pages doğrulanır.
 
 ## Son geliştirme notu — 2026-09-10
@@ -64,8 +70,9 @@ Firestore kullanıcı altında: `classes`, `groups`, `schedule`, `documents`, `s
 - Arşiv/geri alma ve Çöp Kutusu/geri yükleme arayüzü eklendi.
 - Arşivlenen sınıflar aktif ekranlardan gizlenir.
 - `trash` Firestore senkronizasyon koleksiyonuna eklendi.
+- Firestore senkronizasyonunda sınıf/öğrenci sıralaması deterministik hale getirildi.
+- Mint pastel tema ayrı bir CSS katmanı olarak eklendi; mevcut işlevsel CSS üzerine uygulanır.
 - Sonraki kalite odağı: silme/geri yükleme gerçek Storage nesneleri ve öğrenci kayıtlarıyla uçtan uca manuel doğrulama; uygulamanın canlı ortamda kontrolü.
-
 
 ## UI / academic year decisions (2026-09-10)
 - Arşiv ve Çöp Kutusu üst menünün en sağında yer alır; ekranın altına sabit buton konulmaz.
@@ -78,5 +85,4 @@ Firestore kullanıcı altında: `classes`, `groups`, `schedule`, `documents`, `s
 - Öğrenci kayıt formu isim-soyisim yanında doğum tarihi, cinsiyet, veli/ikinci veli adı ve telefonları ile adres bilgilerini saklar; toplu aktarımda bu alanlar boş bırakılabilir.
 - Öğrenci, sınıf, grup, ders, belge ve öğrenci geçmişi silmelerinde kullanıcıdan onay alınır; çöp kutusundaki kalıcı silmeler ve çöp kutusunu boşaltma da onay ister.
 - Ana sayfa başlığında gereksiz 'Bugün ne var?' metni kaldırıldı; gün/tarih ana başlık olarak gösterilir ve ders programı aşağıda yer alır.
-
 - Öğrenci detayında mevcut öğrencinin kişisel bilgileri de düzenlenebilir; kaydetme sonrası bilgiler sınıf kaydına işlenir.
