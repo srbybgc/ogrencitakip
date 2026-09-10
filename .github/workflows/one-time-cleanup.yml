@@ -1,0 +1,40 @@
+name: One-time UI cleanup
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event.head_commit.message != 'chore: remove temporary cleanup workflow'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove duplicate bulk-import buttons
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/App.jsx')
+          s = p.read_text()
+          button = '<button className="secondary small" onClick={onImportStudents}><Upload size={16}/> Toplu Aktar</button>'
+          old = '<div className="detail-actions">' + button + '<div className="detail-actions">' + button + '<div className="detail-actions">' + button + '<button className="primary small" onClick={onAddStudent}><Plus size={16}/> Öğrenci Ekle</button></div></div></div>'
+          new = '<div className="detail-actions">' + button + '<button className="primary small" onClick={onAddStudent}><Plus size={16}/> Öğrenci Ekle</button></div>'
+          if old not in s:
+              raise SystemExit('Expected duplicate button markup was not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Test and build
+        run: |
+          npm install
+          npm test
+          npm run build
+      - name: Commit cleanup
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/App.jsx
+          git commit -m 'fix: remove duplicate bulk-import buttons'
+          git push
