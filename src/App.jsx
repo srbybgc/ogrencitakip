@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
+import ArchivePage from './ArchivePage'
+import TrashPage from './TrashPage'
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { ChevronLeft, ChevronRight, Clock3, FileText, FolderOpen, LayoutGrid, Menu, Plus, Search, Trash2, Upload, Users, X } from 'lucide-react'
 import { auth, storage } from './firebase'
@@ -71,7 +73,7 @@ export default function App() {
   const importStudents = (rows) => {
     if (selectedClass == null) return
     let next = classes, added = 0, skipped = 0
-    rows.forEach(row => { try { next = addStudentDomain(next, selectedClass, row.firstName, row.lastName, uid(), { studentNumber: row.studentNumber, parentPhone: row.parentPhone, secondParentPhone: row.fatherPhone }); added += 1 } catch { skipped += 1 } })
+    rows.forEach(row => { try { next = addStudentDomain(next, selectedClass, row.firstName, row.lastName, uid(), { studentNumber: row.studentNumber, birthDate: row.birthDate, parentPhone: row.parentPhone, secondParentPhone: row.fatherPhone }); added += 1 } catch { skipped += 1 } })
     setClasses(next); setModal(null); setError(skipped ? added + ' öğrenci aktarıldı, ' + skipped + ' satır atlandı (boş/tekrar).' : added + ' öğrenci aktarıldı.')
   }
   const deleteStudent = (sid) => {
@@ -91,16 +93,18 @@ export default function App() {
   return <div className="app-shell">
     <header className="topbar">
       <button className="brand" onClick={() => { setError(''); setView('home') }}><span className="brand-mark">Ö</span><span><b>Öğrenci Takip</b><small>Günlük sınıf yönetimi</small></span></button>
-      <nav className="desktop-nav">{[['home','Ana Sayfa'],['classes','Sınıflar'],['groups','Gruplar'],['schedule','Ders Programı'],['documents','Belgeler']].map(([id,label]) => <button key={id} className={view === id ? 'nav-active' : ''} onClick={() => { setError(''); setView(id) }}>{label}</button>)}<button className="nav-special" onClick={() => window.dispatchEvent(new Event('open-archive'))}>Arşiv</button><button className="nav-special" onClick={() => window.dispatchEvent(new Event('open-trash'))}>Çöp Kutusu</button></nav>
+      <nav className="desktop-nav">{[['home','Ana Sayfa'],['classes','Sınıflar'],['groups','Gruplar'],['schedule','Ders Programı'],['documents','Belgeler']].map(([id,label]) => <button key={id} className={view === id ? 'nav-active' : ''} onClick={() => { setError(''); setView(id) }}>{label}</button>)}<button className={view === 'archive' ? 'nav-active' : 'nav-special'} onClick={() => { setError(''); setView('archive') }}>Arşiv</button><button className={view === 'trash' ? 'nav-active' : 'nav-special'} onClick={() => { setError(''); setView('trash') }}>Çöp Kutusu</button></nav>
       <button className="icon-btn mobile-menu" onClick={() => setModal('menu')}><Menu size={20} /></button>
     </header>
     {error && <div className="content"><Notice message={error} /></div>}
     {view === 'home' && <Home classes={activeClasses} groups={groups} dayLessons={dayLessons} currentLesson={currentLesson} activeDay={activeDay} setActiveDay={setActiveDay} onClass={goClass} onSchedule={() => setView('schedule')} onAdd={() => { setError(''); setModal('new') }} onAddClass={() => { setError(''); setModal('class') }} search={search} setSearch={setSearch} />}
     {view === 'classes' && <Classes classes={visibleClasses} search={search} setSearch={setSearch} onClass={goClass} onAdd={() => setModal('class')} />}
-    {view === 'class' && <ClassDetail cls={classes.find(c => c.id === selectedClass)} schedule={schedule} setSchedule={setSchedule} setError={setError} onBack={() => setView('classes')} onAddStudent={() => setModal('student')} onDeleteStudent={deleteStudent} onDeleteClass={deleteClass} onArchive={() => window.dispatchEvent(new Event('archive-selected-class'))} documents={documents} onDocument={() => setView('documents')} onImportStudents={() => setModal('import-students')} />}
+    {view === 'class' && <ClassDetail cls={classes.find(c => c.id === selectedClass)} schedule={schedule} setSchedule={setSchedule} setError={setError} onBack={() => setView('classes')} onAddStudent={() => setModal('student')} onDeleteStudent={deleteStudent} onDeleteClass={deleteClass} onArchive={() => { if (selectedClass == null) return; const y = new Date().getFullYear(); setClasses(v => v.map(c => c.id === selectedClass ? { ...c, archivedAt: new Date().toISOString(), academicYear: c.academicYear || `${y}-${y+1}` } : c)); setView('archive') }} documents={documents} onDocument={() => setView('documents')} onImportStudents={() => setModal('import-students')} />}
     {view === 'groups' && <Groups classes={activeClasses} groups={groups} setGroups={setGroups} setError={setError} />}
     {view === 'schedule' && <Schedule classes={activeClasses} schedule={schedule} setSchedule={setSchedule} setError={setError} />}
     {view === 'documents' && <Documents classes={activeClasses} groups={groups} documents={documents} setDocuments={setDocuments} />}
+    {view === 'archive' && <ArchivePage />}
+    {view === 'trash' && <TrashPage />}
     {modal === 'class' && <ClassModal onClose={() => setModal(null)} onSave={addClass} />}
     {modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}
     {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}

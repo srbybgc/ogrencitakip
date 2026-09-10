@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import AuthGate from './AuthGate'
 import StudentOverlayFixed from './StudentOverlayFixed'
-import LifecycleOverlay from './LifecycleOverlay'
 import UXFixes from './UXFixes'
 import './firebase'
 import './styles.css'
@@ -17,7 +16,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <AuthGate>
       <App />
       <StudentOverlayFixed />
-      <LifecycleOverlay />
       <UXFixes />
     </AuthGate>
   </React.StrictMode>,
