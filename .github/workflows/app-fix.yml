@@ -1,0 +1,156 @@
+name: Apply live app fixes
+
+on:
+  push:
+    paths:
+      - '.github/workflows/app-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Excel parser
+        run: npm install xlsx --save
+      - name: Patch application
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/App.jsx')
+          s = p.read_text()
+          s = s.replace("import { useEffect, useMemo, useState } from 'react'", "import { useEffect, useMemo, useState } from 'react'\nimport * as XLSX from 'xlsx'")
+
+          old = '''  const addClass = (name) => {
+            try { const id = uid(); setClasses(v => addClassDomain(v, name, id)); setModal(null); goClass(id) }
+            catch (e) { setError(errorText(e)) }
+          }
+          const addStudent = (firstName, lastName) => {
+            if (selectedClass == null) return
+            try { setClasses(v => addStudentDomain(v, selectedClass, firstName, lastName, uid())); setModal(null); setError('') }
+            catch (e) { setError(errorText(e)) }
+          }'''
+          new = '''  const addClass = (name) => {
+            try {
+              const id = uid()
+              const next = addClassDomain(classes, name, id)
+              setClasses(next)
+              setModal(null)
+              goClass(id)
+            } catch (e) { setError(errorText(e)) }
+          }
+          const addStudent = (firstName, lastName) => {
+            if (selectedClass == null) return
+            try {
+              const next = addStudentDomain(classes, selectedClass, firstName, lastName, uid())
+              setClasses(next)
+              setModal(null)
+              setError('')
+            } catch (e) { setError(errorText(e)) }
+          }
+          const importStudents = (rows) => {
+            if (selectedClass == null) return
+            let next = classes
+            let added = 0
+            let skipped = 0
+            rows.forEach(row => {
+              try {
+                next = addStudentDomain(next, selectedClass, row.firstName, row.lastName, uid())
+                added += 1
+              } catch {
+                skipped += 1
+              }
+            })
+            setClasses(next)
+            setModal(null)
+            setError(skipped ? `${added} öğrenci aktarıldı, ${skipped} satır atlandı (boş/tekrar).` : `${added} öğrenci aktarıldı.`)
+          }'''
+          if old not in s: raise SystemExit('add handlers target not found')
+          s = s.replace(old, new, 1)
+
+          old_view = "{view === 'class' && <ClassDetail cls={classes.find(c => c.id === selectedClass)} schedule={schedule} onBack={() => setView('classes')} onAddStudent={() => setModal('student')} onDeleteStudent={deleteStudent} onDeleteClass={deleteClass} documents={documents} onDocument={() => setView('documents')} />}"
+          new_view = "{view === 'class' && <ClassDetail cls={classes.find(c => c.id === selectedClass)} schedule={schedule} onBack={() => setView('classes')} onAddStudent={() => setModal('student')} onImportStudents={() => setModal('import-students')} onDeleteStudent={deleteStudent} onDeleteClass={deleteClass} documents={documents} onDocument={() => setView('documents')} />}"
+          if old_view not in s: raise SystemExit('class view target not found')
+          s = s.replace(old_view, new_view, 1)
+
+          old_modal = "{modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}"
+          new_modal = old_modal + "\n    {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}"
+          if old_modal not in s: raise SystemExit('student modal target not found')
+          s = s.replace(old_modal, new_modal, 1)
+
+          old_sig = "function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument }) {"
+          new_sig = "function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument, onImportStudents }) {"
+          if old_sig not in s: raise SystemExit('ClassDetail signature not found')
+          s = s.replace(old_sig, new_sig, 1)
+
+          old_btn = '<button className="primary small" onClick={onAddStudent}><Plus size={16}/> Öğrenci Ekle</button>'
+          new_btn = '<div className="detail-actions"><button className="secondary small" onClick={onImportStudents}><Upload size={16}/> Excel Aktar</button><button className="primary small" onClick={onAddStudent}><Plus size={16}/> Öğrenci Ekle</button></div>'
+          if old_btn not in s: raise SystemExit('student button target not found')
+          s = s.replace(old_btn, new_btn, 1)
+
+          marker = "function StudentModal({onClose,onSave})"
+          if marker not in s: raise SystemExit('StudentModal marker not found')
+          component = r'''function StudentImportModal({onClose,onImport}){
+            const [file,setFile]=useState(null)
+            const [rows,setRows]=useState([])
+            const [error,setError]=useState('')
+            const [loading,setLoading]=useState(false)
+            const readFile=async f=>{
+              setFile(f);setRows([]);setError('');setLoading(true)
+              try{
+                const data=await f.arrayBuffer()
+                const workbook=XLSX.read(data,{type:'array'})
+                const sheet=workbook.Sheets[workbook.SheetNames[0]]
+                const raw=XLSX.utils.sheet_to_json(sheet,{defval:''})
+                const normalized=raw.map(item=>{
+                  const entries=Object.entries(item).map(([k,v])=>[String(k).trim().toLocaleLowerCase('tr'),String(v??'').trim()])
+                  const find=names=>{const hit=entries.find(([k])=>names.some(n=>k===n||k.includes(n)));return hit?.[1]||''}
+                  let first=find(['ad','adı','isim','first name','firstname'])
+                  let last=find(['soyad','soyadı','last name','lastname'])
+                  if(!first){
+                    const full=find(['ad soyad','adı soyadı','isim soyisim','öğrenci','ogrenci'])
+                    if(full){const parts=full.split(/\s+/);first=parts.shift()||'';last=parts.join(' ')}
+                  }
+                  return {firstName:first,lastName:last}
+                }).filter(x=>x.firstName)
+                if(!normalized.length) throw new Error('Excel dosyasında Ad / Soyad bilgisi bulunamadı.')
+                setRows(normalized)
+              }catch(e){setError(e instanceof Error?e.message:'Excel dosyası okunamadı.')}finally{setLoading(false)}
+            }
+            return <Modal title="Excel'den Öğrenci Aktar" onClose={onClose} wide>
+              <div className="import-box"><p className="muted">Excel dosyanın ilk sayfasından <b>Ad</b> ve <b>Soyad</b> sütunlarını okuyacağız. Tek bir <b>Ad Soyad</b> sütunu da kullanılabilir.</p><label className="file-picker"><Upload size={18}/><span>{file?file.name:'Excel dosyası seç (.xlsx / .xls)'}</span><input type="file" accept=".xlsx,.xls" onChange={e=>e.target.files?.[0]&&readFile(e.target.files[0])}/></label>{loading&&<div className="empty">Dosya okunuyor…</div>}{error&&<Notice message={error}/>} {!loading&&!error&&rows.length>0&&<div className="import-preview"><b>{rows.length} öğrenci bulundu</b>{rows.slice(0,8).map((r,i)=><div key={i}>{r.firstName} {r.lastName}</div>)}{rows.length>8&&<small>+ {rows.length-8} öğrenci daha</small>}</div>}</div>
+              <div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Vazgeç</button><button type="button" className="primary" disabled={!rows.length||loading} onClick={()=>onImport(rows)}>Aktar</button></div>
+            </Modal>
+          }
+
+          '''
+          s = s.replace(marker, component + marker, 1)
+          p.write_text(s)
+          PY
+      - name: Add import styles
+        run: |
+          cat >> src/index.css <<'EOF'
+          .detail-actions{display:flex;gap:8px;align-items:center}
+          .secondary{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer}
+          .secondary.small{padding:8px 11px;font-size:13px}
+          .file-picker{display:flex;align-items:center;gap:10px;border:1px dashed var(--border);border-radius:12px;padding:16px;cursor:pointer}
+          .file-picker input{display:none}
+          .import-preview{margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:12px;display:grid;gap:5px}
+          .import-preview small{color:var(--muted)}
+          EOF
+      - name: Verify and commit
+        run: |
+          npm test
+          npm run build
+          rm -f .github/workflows/app-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json src/App.jsx src/index.css .github/workflows/app-fix.yml
+          git commit -m "Fix duplicate class errors and add Excel student import"
+          git push
