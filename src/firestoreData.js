@@ -1,7 +1,7 @@
 import { collection, doc, getDocs, writeBatch } from 'firebase/firestore'
 import { db } from './firebase'
 
-const COLLECTIONS = ['classes', 'groups', 'schedule', 'documents']
+const COLLECTIONS = ['classes', 'groups', 'schedule', 'documents', 'studentRecords']
 const BATCH_LIMIT = 450
 
 const userCollection = (uid, name) => collection(db, 'users', uid, name)
