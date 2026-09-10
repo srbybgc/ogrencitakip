@@ -40,34 +40,38 @@ function normalizeStudents(){
 }
 
 function buildBirthMap(raw){
- const rows=Array.isArray(raw)?raw:[];const header=(rows[0]||[]).map(clean).map(x=>x.toLocaleLowerCase('tr-TR'))
- const find=(names, fallback)=>{for(const n of names){const i=header.indexOf(n);if(i>=0)return i}return fallback}
+ const rows=Array.isArray(raw)?raw:[]
+ const header=(rows[0]||[]).map(clean).map(x=>x.toLocaleLowerCase('tr-TR'))
+ const find=(names,fallback)=>{for(const n of names){const i=header.indexOf(n);if(i>=0)return i}return fallback}
  const noI=find(['öğrenci no','ogrenci no','öğrenci numarası','ogrenci numarasi','student number','studentnumber'],1)
  const firstI=find(['ad','adı','isim','first name','firstname'],2)
  const lastI=find(['soyad','soyadı','last name','lastname'],3)
- const birthI=find(['doğum tarihi','doğum tarihi','dogum tarihi','birth date','birthdate'],5)
- const map={byNumber:{},byName:{}}
+ const birthI=find(['doğum tarihi','dogum tarihi','birth date','birthdate'],5)
+ const map={byNumber:{},byName:{},count:0}
  rows.slice(1).forEach(r=>{
-  const number=clean(r?.[noI]),first=clean(r?.[firstI]),last=clean(r?.[lastI]),birth=toIso(r?.[birthI]);if(!birth)return
+  const number=clean(r?.[noI]),first=clean(r?.[firstI]),last=clean(r?.[lastI]),birth=toIso(r?.[birthI])
+  if(!birth)return
   if(number)map.byNumber[number]=birth
   if(first||last)map.byName[nameKey(first,last)]=birth
+  map.count+=1
  })
  return map
 }
 
 function applyBirthMap(map){
  try{
-  const classes=JSON.parse(localStorage.getItem('ot-classes')||'[]');if(!Array.isArray(classes))return false
-  let changed=false
+  const classes=JSON.parse(localStorage.getItem('ot-classes')||'[]')
+  if(!Array.isArray(classes))return {changed:false,matched:0,total:0}
+  let changed=false,matched=0,total=0
   const next=classes.map(c=>({...c,students:(c.students||[]).map(s=>{
    const number=clean(s.studentNumber),name=nameKey(s.firstName,s.lastName)
    const birth=map.byNumber?.[number]||map.byName?.[name]
-   if(birth&&s.birthDate!==birth){changed=true;return {...s,birthDate:birth}}
+   if(birth){total++;matched++;if(s.birthDate!==birth){changed=true;return {...s,birthDate:birth}}}
    return s
   })}))
   if(changed)localStorage.setItem('ot-classes',JSON.stringify(next))
-  return changed
- }catch{return false}
+  return {changed,matched,total}
+ }catch{return {changed:false,matched:0,total:0}}
 }
 
 export default function UXFixes(){
@@ -80,19 +84,27 @@ export default function UXFixes(){
   const onFile=async e=>{
    const input=e.target;if(!(input instanceof HTMLInputElement)||input.type!=='file'||!input.files?.[0])return
    window.__otBirthReloaded=false
+   window.__otBirthAttempts=0
    try{
     const wb=XLSX.read(await input.files[0].arrayBuffer(),{type:'array',raw:false,cellText:true,cellDates:false})
     const ws=wb.Sheets[wb.SheetNames[0]]
     const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false})
     window.__otImportBirthDates=buildBirthMap(raw)
-   }catch{window.__otImportBirthDates={byNumber:{},byName:{}}}
+   }catch{window.__otImportBirthDates={byNumber:{},byName:{},count:0}}
   }
   document.addEventListener('blur',onBlur,true);document.addEventListener('change',onFile,true)
   const timer=setInterval(()=>{
-   const map=window.__otImportBirthDates;if(!map||window.__otBirthReloaded)return
-   const hasMap=Object.keys(map.byNumber||{}).length||Object.keys(map.byName||{}).length;if(!hasMap)return
-   if(applyBirthMap(map)){window.__otBirthReloaded=true;delete window.__otImportBirthDates;setTimeout(()=>location.reload(),100)}else{window.__otBirthReloaded=true;delete window.__otImportBirthDates}
-  },400)
+   const map=window.__otImportBirthDates
+   if(!map||window.__otBirthReloaded)return
+   const hasMap=(map.count||0)>0
+   if(!hasMap){window.__otBirthReloaded=true;delete window.__otImportBirthDates;return}
+   window.__otBirthAttempts=(window.__otBirthAttempts||0)+1
+   const result=applyBirthMap(map)
+   // React state/localStorage may be written shortly after the file event. Keep retrying
+   // until imported students exist, rather than losing the birth-date map on the first poll.
+   if(result.changed){window.__otBirthReloaded=true;delete window.__otImportBirthDates;delete window.__otBirthAttempts;setTimeout(()=>location.reload(),150);return}
+   if(result.matched>=map.count||window.__otBirthAttempts>=40){window.__otBirthReloaded=true;delete window.__otImportBirthDates;delete window.__otBirthAttempts;if(result.matched>0)setTimeout(()=>location.reload(),150)}
+  },250)
   return()=>{observer.disconnect();document.removeEventListener('blur',onBlur,true);document.removeEventListener('change',onFile,true);clearInterval(timer)}
  },[])
  return null
