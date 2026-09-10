@@ -10,7 +10,21 @@ if (!s.includes("import * as XLSX from 'xlsx'")) {
 const start = s.indexOf('  const addClass = (name) => {')
 const end = s.indexOf('  const deleteStudent = (sid) => {')
 if (start >= 0 && end > start && !s.includes('const importStudents = (rows) =>')) {
-  const handlers = `  const addClass = (name) => {\n    try { const id = uid(); const next = addClassDomain(classes, name, id); setClasses(next); setModal(null); goClass(id) } catch (e) { setError(errorText(e)) }\n  }\n  const addStudent = (firstName, lastName) => {\n    if (selectedClass == null) return\n    try { const next = addStudentDomain(classes, selectedClass, firstName, lastName, uid()); setClasses(next); setModal(null); setError('') } catch (e) { setError(errorText(e)) }\n  }\n  const importStudents = (rows) => {\n    if (selectedClass == null) return\n    let next = classes, added = 0, skipped = 0\n    rows.forEach(row => { try { next = addStudentDomain(next, selectedClass, row.firstName, row.lastName, uid()); added += 1 } catch { skipped += 1 } })\n    setClasses(next); setModal(null); setError(skipped ? added + ' öğrenci aktarıldı, ' + skipped + ' satır atlandı (boş/tekrar).' : added + ' öğrenci aktarıldı.')\n  }\n`
+  const handlers = [
+    '  const addClass = (name) => {',
+    "    try { const id = uid(); const next = addClassDomain(classes, name, id); setClasses(next); setModal(null); goClass(id) } catch (e) { setError(errorText(e)) }",
+    '  }',
+    '  const addStudent = (firstName, lastName) => {',
+    '    if (selectedClass == null) return',
+    "    try { const next = addStudentDomain(classes, selectedClass, firstName, lastName, uid()); setClasses(next); setModal(null); setError('') } catch (e) { setError(errorText(e)) }",
+    '  }',
+    '  const importStudents = (rows) => {',
+    '    if (selectedClass == null) return',
+    '    let next = classes, added = 0, skipped = 0',
+    '    rows.forEach(row => { try { next = addStudentDomain(next, selectedClass, row.firstName, row.lastName, uid()); added += 1 } catch { skipped += 1 } })',
+    "    setClasses(next); setModal(null); setError(skipped ? added + ' öğrenci aktarıldı, ' + skipped + ' satır atlandı (boş/tekrar).' : added + ' öğrenci aktarıldı.')",
+    '  }',
+  ].join('\n') + '\n'
   s = s.slice(0, start) + handlers + s.slice(end)
 }
 
@@ -20,7 +34,7 @@ s = s.replace(
 )
 s = s.replace(
   "{modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}",
-  "{modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}\n    {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}",
+  "{modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent />}\n    {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}",
 )
 s = s.replace(
   'function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument })',
@@ -45,7 +59,7 @@ if (!s.includes('function StudentImportModal')) {
 }
 fs.writeFileSync(appPath, s)
 
-const cssPath = 'src/index.css'
+const cssPath = fs.existsSync('src/styles.css') ? 'src/styles.css' : 'src/index.css'
 let css = fs.readFileSync(cssPath, 'utf8')
 if (!css.includes('.detail-actions{')) {
   css += '\n.detail-actions{display:flex;gap:8px;align-items:center}.secondary{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer}.secondary.small{padding:8px 11px;font-size:13px}.file-picker{display:flex;align-items:center;gap:10px;border:1px dashed var(--border);border-radius:12px;padding:16px;cursor:pointer}.file-picker input{display:none}.import-preview{margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:12px;display:grid;gap:5px}.import-preview small{color:var(--muted)}\n'
