@@ -39,6 +39,11 @@ export default function StudentOverlay() {
       }
     }
     document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [])
+
+  useEffect(() => {
+    if (!student) return undefined
     const timer = setInterval(() => {
       const classes = read('ot-classes')
       const studentIds = new Set(classes.flatMap(cls => (cls.students || []).map(s => s.id)))
@@ -46,9 +51,9 @@ export default function StudentOverlay() {
       const clean = records.filter(item => studentIds.has(item.studentId) && ['note', 'attendance', 'event'].includes(item.type))
       if (clean.length !== records.length) write('ot-student-records', clean)
       setDataVersion(v => v + 1)
-    }, 700)
-    return () => { document.removeEventListener('click', onClick); clearInterval(timer) }
-  }, [])
+    }, 1200)
+    return () => clearInterval(timer)
+  }, [student])
 
   const records = useMemo(() => read('ot-student-records').filter(item => item.studentId === student?.id).sort((a, b) => `${b.date || ''}${b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.createdAt || ''}`)), [student, dataVersion])
   const documents = useMemo(() => read('ot-documents').filter(item => item.targetType === 'student' && item.targetId === student?.id), [student, dataVersion])
