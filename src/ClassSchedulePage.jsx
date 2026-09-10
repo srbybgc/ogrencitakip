@@ -24,4 +24,4 @@ export default function ClassSchedulePage({ cls, schedule, setSchedule, setError
 }
 
 // Dedicated page: class schedule is a normal App view, not an overlay.
-// Final build verification.
+// Final verification + deploy trigger.
