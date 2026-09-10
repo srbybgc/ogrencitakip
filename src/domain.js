@@ -1,10 +1,23 @@
 export const overlap = (aStart, aEnd, bStart, bEnd) => aStart < bEnd && bStart < aEnd
 
+const compareTr = (a, b) => String(a ?? '').localeCompare(String(b ?? ''), 'tr', { sensitivity: 'base', numeric: true })
+
+export function sortStudents(students) {
+  return [...(Array.isArray(students) ? students : [])].sort((a, b) => {
+    const first = compareTr(a.firstName, b.firstName)
+    return first || compareTr(a.lastName, b.lastName)
+  })
+}
+
+export function sortClasses(classes) {
+  return [...(Array.isArray(classes) ? classes : [])].sort((a, b) => compareTr(a.name, b.name))
+}
+
 export function addClass(classes, name, id = crypto.randomUUID()) {
   const clean = name.trim()
   if (!clean) throw new Error('Sınıf adı boş bırakılamaz.')
   if (classes.some(c => c.name.trim().toLocaleLowerCase('tr') === clean.toLocaleLowerCase('tr'))) throw new Error('Bu sınıf zaten mevcut.')
-  return [...classes, { id, name: clean, students: [] }]
+  return sortClasses([...classes, { id, name: clean, students: [] }])
 }
 
 export function addStudent(classes, classId, firstName, lastName = '', id = crypto.randomUUID()) {
@@ -18,14 +31,14 @@ export function addStudent(classes, classId, firstName, lastName = '', id = cryp
     const students = Array.isArray(c.students) ? c.students : []
     const duplicate = students.some(s => `${s.firstName} ${s.lastName}`.trim().toLocaleLowerCase('tr') === `${first} ${last}`.trim().toLocaleLowerCase('tr'))
     if (duplicate) throw new Error('Bu öğrenci bu sınıfta zaten mevcut.')
-    return { ...c, students: [...students, { id, firstName: first, lastName: last }] }
+    return { ...c, students: sortStudents([...students, { id, firstName: first, lastName: last }]) }
   })
   if (!found) throw new Error('Sınıf bulunamadı.')
-  return result
+  return sortClasses(result)
 }
 
 export function deleteStudent(classes, classId, studentId) {
-  return classes.map(c => c.id === classId ? { ...c, students: (Array.isArray(c.students) ? c.students : []).filter(s => s.id !== studentId) } : c)
+  return classes.map(c => c.id === classId ? { ...c, students: sortStudents((Array.isArray(c.students) ? c.students : []).filter(s => s.id !== studentId)) } : c)
 }
 
 export function createGroup(groups, name, classIds, id = crypto.randomUUID()) {
@@ -91,8 +104,9 @@ export function checkIntegrity(classes, groups, schedule, documents) {
   const safeGroups = Array.isArray(groups) ? groups : []
   const safeSchedule = Array.isArray(schedule) ? schedule : []
   const safeDocuments = Array.isArray(documents) ? documents : []
-  const classIds = new Set(safeClasses.map(c => c.id))
-  const studentIds = new Set(safeClasses.flatMap(c => (Array.isArray(c.students) ? c.students : []).map(s => s.id)))
+  const sortedClasses = sortClasses(safeClasses).map(c => ({ ...c, students: sortStudents(c.students) }))
+  const classIds = new Set(sortedClasses.map(c => c.id))
+  const studentIds = new Set(sortedClasses.flatMap(c => (Array.isArray(c.students) ? c.students : []).map(s => s.id)))
   const groupIds = new Set(safeGroups.map(g => g.id))
   const validSchedule = safeSchedule.filter(s => classIds.has(s.classId))
   const validDocuments = safeDocuments.filter(d => {
@@ -101,5 +115,5 @@ export function checkIntegrity(classes, groups, schedule, documents) {
     if (d.targetType === 'group') return groupIds.has(d.targetId)
     return false
   })
-  return { schedule: validSchedule, documents: validDocuments, ok: validSchedule.length === safeSchedule.length && validDocuments.length === safeDocuments.length }
+  return { classes: sortedClasses, schedule: validSchedule, documents: validDocuments, ok: validSchedule.length === safeSchedule.length && validDocuments.length === safeDocuments.length }
 }
