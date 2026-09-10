@@ -46,7 +46,7 @@ export default function App() {
   const activeClasses = classes.filter(c => !c.archivedAt)
   const visibleClasses = activeClasses.filter(c => c.name.toLocaleLowerCase('tr').includes(search.toLocaleLowerCase('tr')))
 
-  const goClass = (id) => { setError(''); setSelectedClass(id); setView('class') }
+  const goClass = (id) => { setError(''); setSelectedClass(id); window.__otSelectedClass=id; setView('class') }
   const addClass = (name, academicYear) => {
     try { const id = uid(); const next = addClassDomain(classes, name, id).map(c => c.id === id ? {...c, academicYear} : c); setClasses(next); setModal(null); goClass(id) } catch (e) { setError(errorText(e)) }
   }
@@ -79,7 +79,7 @@ export default function App() {
       <button className="icon-btn mobile-menu" onClick={() => setModal('menu')}><Menu size={20} /></button>
     </header>
     {error && <div className="content"><Notice message={error} /></div>}
-    {view === 'home' && <Home classes={activeClasses} groups={groups} dayLessons={dayLessons} currentLesson={currentLesson} activeDay={activeDay} setActiveDay={setActiveDay} onClass={goClass} onAdd={() => { setError(''); setModal('new') }} />}
+    {view === 'home' && <Home classes={activeClasses} groups={groups} dayLessons={dayLessons} currentLesson={currentLesson} activeDay={activeDay} setActiveDay={setActiveDay} onClass={goClass} onSchedule={() => setView('schedule')} onAdd={() => { setError(''); setModal('new') }} />}
     {view === 'classes' && <Classes classes={visibleClasses} search={search} setSearch={setSearch} onClass={goClass} onAdd={() => setModal('class')} />}
     {view === 'class' && <ClassDetail cls={classes.find(c => c.id === selectedClass)} schedule={schedule} onBack={() => setView('classes')} onAddStudent={() => setModal('student')} onDeleteStudent={deleteStudent} onDeleteClass={deleteClass} onArchive={() => window.dispatchEvent(new Event('archive-selected-class'))} documents={documents} onDocument={() => setView('documents')} onImportStudents={() => setModal('import-students')} />}
     {view === 'groups' && <Groups classes={activeClasses} groups={groups} setGroups={setGroups} setError={setError} />}
@@ -93,7 +93,7 @@ export default function App() {
   </div>
 }
 
-function Home({ classes, groups, dayLessons, currentLesson, activeDay, setActiveDay, onClass, onAdd }) {
+function Home({ classes, groups, dayLessons, currentLesson, activeDay, setActiveDay, onClass, onSchedule, onAdd }) {
   const orderedClasses = currentLesson ? [...classes].sort((a,b) => Number(b.id === currentLesson.classId) - Number(a.id === currentLesson.classId)) : classes
   return <main className="content">
     <div className="welcome"><div><p className="eyebrow">{new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</p><h1>Bugün ne var?</h1><p className="muted">Ders programın ve sınıfların tek bakışta.</p></div><button className="primary" onClick={onAdd}><Plus size={18}/> Yeni</button></div>
