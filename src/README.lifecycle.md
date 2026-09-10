@@ -1,0 +1,1 @@
+Lifecycle navigation has been converted to normal App views: archive and trash are first-class modules, not overlays. This file documents the migration and can remain as project documentation.
