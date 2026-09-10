@@ -168,3 +168,7 @@ Bu dosya sohbet geçmişinin yerine geçecek proje hafızasıdır. Yeni bir kara
 ## 15. 2026-09-10 geliştirme notu
 
 Çoklu öğrenci aktarımı için hazırlanan GitHub Actions yaması `70e0d4c` commit'inde workflow olarak eklendi; Build ve Pages bu commit için başarılı oldu, ancak workflow'un kendisi docs değişikliği tetikleyicisine bağlı olduğundan henüz kaynak dosyalara uygulanmadı. Bir sonraki adım bu workflow'u tetikleyip oluşan kaynak değişikliklerini doğrulamaktır.
+
+## 16. 2026-09-10 devam notu
+
+Import workflow sözdizimi sadeleştirildi ve yeni commit `d1b0724` ile güncellendi. Bu committen sonra docs dosyasına yapılan bu değişiklik workflow'u gerçek anlamda tetiklemek için kullanılıyor. Workflow tamamlandıktan sonra geçici workflow kendisini kaldırmalı; ardından Build ve Pages yeniden doğrulanmalı.
