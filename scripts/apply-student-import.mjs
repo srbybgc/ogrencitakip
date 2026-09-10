@@ -34,7 +34,7 @@ s = s.replace(
 )
 s = s.replace(
   "{modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}",
-  "{modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent />}\n    {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}",
+  "{modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}\n    {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}",
 )
 s = s.replace(
   'function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument })',
