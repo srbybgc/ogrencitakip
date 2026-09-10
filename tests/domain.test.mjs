@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { removeClassReferences } from '../src/domain.js'
+import { addLesson, removeClassReferences } from '../src/domain.js'
 
 test('sınıf silinince sınıfa bağlı öğrencilerin belgeleri de temizlenir', () => {
   const classes = [
@@ -24,4 +24,12 @@ test('sınıf silinince sınıfa bağlı öğrencilerin belgeleri de temizlenir'
   assert.deepEqual(result.schedule.map(item => item.id), ['l2'])
   assert.deepEqual(result.documents.map(item => item.id), ['d3', 'd4'])
   assert.deepEqual(result.removedDocuments.map(item => item.id), ['d1', 'd2'])
+})
+
+test('farklı sınıflar aynı saatte ders yapabilir, aynı sınıf yapamaz', () => {
+  const first = { id: 'l1', classId: 'c1', day: 0, lesson: 'Matematik', start: '09:00', end: '10:00' }
+  const second = { id: 'l2', classId: 'c2', day: 0, lesson: 'Türkçe', start: '09:00', end: '10:00' }
+  const schedule = addLesson([first], second, 'l2')
+  assert.equal(schedule.length, 2)
+  assert.throws(() => addLesson(schedule, { ...second, lesson: 'Fen' }, 'l3'), /başka bir dersi/)
 })
