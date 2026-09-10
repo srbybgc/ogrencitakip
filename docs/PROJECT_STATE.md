@@ -172,3 +172,13 @@ Bu dosya sohbet geçmişinin yerine geçecek proje hafızasıdır. Yeni bir kara
 ## 16. 2026-09-10 devam notu
 
 Import workflow sözdizimi sadeleştirildi ve yeni commit `d1b0724` ile güncellendi. Bu committen sonra docs dosyasına yapılan bu değişiklik workflow'u gerçek anlamda tetiklemek için kullanılıyor. Workflow tamamlandıktan sonra geçici workflow kendisini kaldırmalı; ardından Build ve Pages yeniden doğrulanmalı.
+
+## 17. 2026-09-10 sonuç notu
+
+Çoklu öğrenci aktarımı artık uygulamanın gerçek kaynak koduna işlendi. `xlsx` bağımlılığı kalıcı olarak `package.json` içinde tutuluyor; arayüz XLS/XLSX, CSV ve TXT dosyalarını kabul ediyor, aktarım öncesi önizleme gösteriyor ve boş/tekrar satırları güvenli biçimde atlıyor. Öğrenci detayları `StudentOverlay` üzerinden not, olay ve yoklama geçmişini destekliyor.
+
+Geçici öğrenci-import patch scripti ve bunun için oluşturulan eski `app-fix*` / `complete-student-import` workflow'ları kaldırıldı. `build.yml` artık kaynak kodu değiştirmiyor; yalnızca bağımlılık kurulumu, test ve production build doğrulaması yapıyor.
+
+Build doğrulaması: 18 test geçti ve production build başarılı. Son kaynak doğrulamasında `src/App.jsx` içinde `XLSX` importu, `importStudents` handler'ı ve `StudentImportModal` bulundu; sınıf detayında `Toplu Aktar` eylemi mevcut.
+
+Kalan canlı doğrulama: son temizlik commitinden sonra GitHub Pages deployunun başarılı tamamlanması ve canlı uygulamanın güncel committen servis edildiğinin kontrol edilmesi. Bundan sonra yalnızca gerçekten eksik olan işlevsel/entegrasyon sorunları düzeltilmelidir.
