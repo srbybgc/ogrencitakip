@@ -13,6 +13,7 @@ const read = (key, fallback = []) => {
 const write = (key, value) => localStorage.setItem(key, JSON.stringify(value))
 const dateKey = () => new Date().toISOString().slice(0, 10)
 const dateLabel = value => new Date(`${value}T12:00:00`).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+const fullName = student => `${student.firstName} ${student.lastName}`.trim()
 
 export default function StudentOverlay() {
   const [student, setStudent] = useState(null)
@@ -36,8 +37,14 @@ export default function StudentOverlay() {
       if (!row || event.target.closest('button,a,input,select,textarea')) return
       const name = row.querySelector('b')?.textContent?.trim()
       if (!name) return
+      const content = row.closest('.content')
+      const className = content?.querySelector('.detail-head h1')?.textContent?.trim()
       const classes = read('ot-classes')
-      const found = classes.flatMap(cls => (cls.students || []).map(s => ({ ...s, className: cls.name }))).find(s => `${s.firstName} ${s.lastName}`.trim() === name)
+      const candidates = classes
+        .filter(cls => !className || cls.name === className)
+        .flatMap(cls => (cls.students || []).map(s => ({ ...s, className: cls.name })))
+        .filter(s => fullName(s) === name)
+      const found = candidates.length === 1 ? candidates[0] : candidates.find(s => s.className === className)
       if (found) {
         setStudent(found)
         setRecordType('note')
@@ -47,9 +54,22 @@ export default function StudentOverlay() {
       }
     }
     document.addEventListener('click', onClick)
-    const timer = setInterval(syncRecords, 1000)
+    return () => document.removeEventListener('click', onClick)
+  }, [student])
+
+  useEffect(() => {
+    if (!student) return undefined
+    const syncRecords = () => {
+      const classes = read('ot-classes')
+      const records = read('ot-student-records')
+      const result = checkStudentRecordIntegrity(classes, records)
+      if (!result.ok) write('ot-student-records', result.records)
+      if (!classes.some(cls => (cls.students || []).some(item => item.id === student.id))) setStudent(null)
+      setDataVersion(v => v + 1)
+    }
     syncRecords()
-    return () => { document.removeEventListener('click', onClick); clearInterval(timer) }
+    const timer = setInterval(syncRecords, 1000)
+    return () => clearInterval(timer)
   }, [student])
 
   const records = useMemo(() => read('ot-student-records').filter(item => item.studentId === student?.id).sort((a, b) => `${b.date || ''}${b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.createdAt || ''}`)), [student, dataVersion])
