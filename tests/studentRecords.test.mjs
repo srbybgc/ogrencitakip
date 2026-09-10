@@ -17,6 +17,13 @@ test('yoklama ve olay kayıtları kabul edilir', () => {
   assert.equal(next[0].status, 'Geldi')
 })
 
+test('geçersiz yoklama durumu reddedilir', () => {
+  assert.throws(
+    () => addStudentRecord([], { studentId: 's1', type: 'attendance', text: 'Bilinmiyor', status: 'Bilinmiyor' }, 'r1'),
+    /Geçersiz yoklama durumu/,
+  )
+})
+
 test('öğrenci kayıtları doğrulanır', () => {
   const classes = [{ id: 'c1', students: [{ id: 's1', firstName: 'Ada', lastName: 'Kaya' }] }]
   const records = [
