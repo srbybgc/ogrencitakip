@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth'
 import { auth } from './firebase'
+import { startFirestoreSync } from './firestoreSync'
 
 const AuthContext = createContext(null)
 
@@ -10,6 +11,7 @@ export function useAuthUser() {
 
 export default function AuthGate({ children }) {
   const [user, setUser] = useState(undefined)
+  const [dataReady, setDataReady] = useState(false)
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,6 +19,31 @@ export default function AuthGate({ children }) {
   const [error, setError] = useState('')
 
   useEffect(() => onAuthStateChanged(auth, setUser), [])
+
+  useEffect(() => {
+    let active = true
+    let cleanup = () => {}
+    setDataReady(false)
+    if (!user) return () => { active = false }
+
+    startFirestoreSync(user.uid)
+      .then(stop => {
+        if (!active) stop()
+        else {
+          cleanup = stop
+          setDataReady(true)
+        }
+      })
+      .catch(err => {
+        console.error('Firestore veri bağlantısı kurulamadı:', err)
+        if (active) setDataReady(true)
+      })
+
+    return () => {
+      active = false
+      cleanup()
+    }
+  }, [user?.uid])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -45,6 +72,8 @@ export default function AuthGate({ children }) {
   if (user === undefined) return <div className="auth-screen"><div className="auth-card"><div className="brand-mark auth-mark">Ö</div><h1>Öğrenci Takip</h1><p>Yükleniyor…</p></div></div>
 
   if (!user) return <main className="auth-screen"><section className="auth-card"><div className="brand-mark auth-mark">Ö</div><p className="eyebrow">Güvenli giriş</p><h1>Öğrenci Takip</h1><p className="muted">Sınıflarına ve öğrenci kayıtlarına erişmek için giriş yap.</p><form onSubmit={submit} className="auth-form"><label className="field"><span>E-posta</span><input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="ornek@mail.com" /></label><label className="field"><span>Şifre</span><input type="password" autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="En az 6 karakter" /></label>{error && <div className="auth-error">{error}</div>}<button className="primary auth-submit" disabled={busy}>{busy ? 'Bekleyin…' : mode==='login' ? 'Giriş Yap' : 'Hesap Oluştur'}</button></form><button className="auth-switch" onClick={()=>{setMode(mode==='login'?'signup':'login');setError('')}}>{mode==='login' ? 'İlk kez kullanıyorum — hesap oluştur' : 'Zaten hesabım var — giriş yap'}</button></section></main>
+
+  if (!dataReady) return <div className="auth-screen"><div className="auth-card"><div className="brand-mark auth-mark">Ö</div><h1>Öğrenci Takip</h1><p>Verilerin hazırlanıyor…</p></div></div>
 
   return <AuthContext.Provider value={user}><div className="app-with-auth"><div className="user-bar"><span>{user.email}</span><button onClick={()=>signOut(auth)}>Çıkış</button></div>{children}</div></AuthContext.Provider>
 }
