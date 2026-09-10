@@ -24,14 +24,6 @@ export default function StudentOverlay() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const syncRecords = () => {
-      const classes = read('ot-classes')
-      const records = read('ot-student-records')
-      const result = checkStudentRecordIntegrity(classes, records)
-      if (!result.ok) write('ot-student-records', result.records)
-      if (student && !classes.some(cls => (cls.students || []).some(item => item.id === student.id))) setStudent(null)
-      setDataVersion(v => v + 1)
-    }
     const onClick = event => {
       const row = event.target.closest?.('.student-row')
       if (!row || event.target.closest('button,a,input,select,textarea')) return
@@ -55,7 +47,7 @@ export default function StudentOverlay() {
     }
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)
-  }, [student])
+  }, [])
 
   useEffect(() => {
     if (!student) return undefined
