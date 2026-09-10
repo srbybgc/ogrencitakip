@@ -1,6 +1,6 @@
 name: Convert class schedule to module
 
-on:
+'on':
   push:
     branches: [main]
 
@@ -9,71 +9,41 @@ permissions:
 
 jobs:
   migrate:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Refactor class schedule UI
+      - name: Migrate class schedule
+        shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
-
-          p = Path('src/App.jsx')
-          s = p.read_text(encoding='utf-8')
-
+          p=Path('src/App.jsx')
+          s=p.read_text(encoding='utf-8')
           if "import ClassSchedulePage from './ClassSchedulePage'" not in s:
-              s = s.replace("import TrashPage from './TrashPage'", "import TrashPage from './TrashPage'\nimport ClassSchedulePage from './ClassSchedulePage'", 1)
-
-          old_route = "{view === 'class' && <ClassDetail cls={classes.find(c => c.id === selectedClass)} schedule={schedule} setSchedule={setSchedule} setError={setError} onBack={() => setView('classes')} onAddStudent={() => setModal('student')} onDeleteStudent={deleteStudent} onDeleteClass={deleteClass} onArchive={() => { if (selectedClass == null) return; const y = new Date().getFullYear(); setClasses(v => v.map(c => c.id === selectedClass ? { ...c, archivedAt: new Date().toISOString(), academicYear: c.academicYear || `${y}-${y+1}` } : c)); setView('archive') }} documents={documents} onDocument={() => setView('documents')} onImportStudents={() => setModal('import-students')} />}"
-          new_route = old_route[:-2] + " onProgram={() => setView('class-schedule')} />}"
-          if old_route in s:
-              s = s.replace(old_route, new_route, 1)
-          else:
-              raise SystemExit('class route not found')
-
-          marker = "{view === 'class' && <ClassDetail"
-          insert_after = "    {view === 'class-schedule' && <ClassSchedulePage cls={classes.find(c => c.id === selectedClass)} schedule={schedule} setSchedule={setSchedule} setError={setError} onBack={() => setView('class')} />}\n"
-          if "view === 'class-schedule'" not in s:
-              pos = s.index(marker)
-              line_start = s.rfind('\n', 0, pos) + 1
-              s = s[:line_start] + insert_after + s[line_start:]
-
-          old_sig = "function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument, onImportStudents, onArchive, setSchedule, setError })"
-          new_sig = "function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument, onImportStudents, onArchive, onProgram, setSchedule, setError })"
-          if old_sig not in s:
-              raise SystemExit('ClassDetail signature not found')
-          s = s.replace(old_sig, new_sig, 1)
-
-          s = re.sub(r"\n  const \[programOpen,setProgramOpen\]=useState\(false\),\[day,setDay\]=useState\(0\),\[form,setForm\]=useState\(\{start:'08:40',end:'09:20',lesson:'',isMyLesson:false\}\)", '', s, count=1)
-
-          section_pattern = re.compile(r"\n    <section className=\"card\"><div className=\"section-head\"><div className=\"section-title\"><Clock3 size=\{18\}/> Sınıf Ders Programı</div>.*?</section>", re.S)
-          replacement = """
-    <section className="card class-program-summary">
-      <div className="section-head"><div><div className="section-title"><Clock3 size={18}/> Sınıf Ders Programı</div><p className="muted">Haftalık dersleri ayrı bir sayfada düzenle. “Benim dersim” olarak işaretlenenler öğretmenin ana programında görünür.</p></div><button className="primary small" onClick={onProgram}>Programı Yönet <ChevronRight size={15}/></button></div>
-    </section>"""
-          s, n = section_pattern.subn(replacement, s, count=1)
-          if n != 1:
-              raise SystemExit(f'class schedule section not replaced: {n}')
-
-          p.write_text(s, encoding='utf-8')
-
-          css = Path('src/styles.css')
-          c = css.read_text(encoding='utf-8')
-          extra = '''\n.class-program-summary{border-color:var(--mint-200);background:linear-gradient(145deg,#fff,#f5fbf8)}.class-program-days{margin-bottom:18px}.class-program-form{grid-template-columns:1fr 1fr 2fr auto}.my-lesson-toggle{margin-top:13px;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);background:#fbfdfc;border-radius:12px;color:var(--text)}.my-lesson-toggle input{accent-color:var(--mint-600);width:16px;height:16px}.my-lesson-toggle b,.my-lesson-toggle small{display:block}.my-lesson-toggle b{font-size:11px}.my-lesson-toggle small{font-size:10px;color:var(--muted);margin-top:2px}.class-program-list{display:grid;gap:9px}.class-program-row{display:flex;align-items:center;gap:14px;padding:13px 14px;border:1px solid var(--border);border-radius:14px;background:#fbfdfc}.program-time{width:72px;flex:0 0 72px}.program-time b,.program-time span{display:block}.program-time b{font-size:13px;color:var(--mint-700)}.program-time span{font-size:10px;color:var(--muted);margin-top:2px}.program-main{flex:1;min-width:0}.program-main b,.program-main small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.program-main b{font-size:12px}.program-main small{font-size:10px;color:var(--muted);margin-top:3px}.program-badge{font-size:9px;font-weight:800;color:var(--mint-700);background:var(--mint-100);border:1px solid var(--mint-200);border-radius:999px;padding:5px 8px;white-space:nowrap}\n'''
-          if '.class-program-summary{' not in c:
-              css.write_text(c + extra, encoding='utf-8')
+              s=s.replace("import TrashPage from './TrashPage'", "import TrashPage from './TrashPage'\nimport ClassSchedulePage from './ClassSchedulePage'",1)
+              old="{view === 'class' && <ClassDetail cls={classes.find(c => c.id === selectedClass)} schedule={schedule} setSchedule={setSchedule} setError={setError} onBack={() => setView('classes')} onAddStudent={() => setModal('student')} onDeleteStudent={deleteStudent} onDeleteClass={deleteClass} onArchive={() => { if (selectedClass == null) return; const y = new Date().getFullYear(); setClasses(v => v.map(c => c.id === selectedClass ? { ...c, archivedAt: new Date().toISOString(), academicYear: c.academicYear || `${y}-${y+1}` } : c)); setView('archive') }} documents={documents} onDocument={() => setView('documents')} onImportStudents={() => setModal('import-students')} />}"
+              if old not in s: raise SystemExit('class route not found')
+              s=s.replace(old,old[:-2]+" onProgram={() => setView('class-schedule')} />}",1)
+              marker="    {view === 'class' && <ClassDetail"
+              s=s.replace(marker,"    {view === 'class-schedule' && <ClassSchedulePage cls={classes.find(c => c.id === selectedClass)} schedule={schedule} setSchedule={setSchedule} setError={setError} onBack={() => setView('class')} />}\n"+marker,1)
+              sig="function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument, onImportStudents, onArchive, setSchedule, setError })"
+              s=s.replace(sig,"function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument, onImportStudents, onArchive, onProgram, setSchedule, setError })",1)
+              s=re.sub(r"\n  const \[programOpen,setProgramOpen\]=useState\(false\),\[day,setDay\]=useState\(0\),\[form,setForm\]=useState\(\{start:'08:40',end:'09:20',lesson:'',isMyLesson:false\}\)",'',s,count=1)
+              pat=re.compile(r"\n    <section className=\"card\"><div className=\"section-head\"><div className=\"section-title\"><Clock3 size=\{18\}/> Sınıf Ders Programı</div>.*?</section>",re.S)
+              repl='''\n    <section className="card class-program-summary">\n      <div className="section-head"><div><div className="section-title"><Clock3 size={18}/> Sınıf Ders Programı</div><p className="muted">Haftalık dersleri ayrı bir sayfada düzenle. “Benim dersim” olarak işaretlenenler öğretmenin ana programında görünür.</p></div><button className="primary small" onClick={onProgram}>Programı Yönet <ChevronRight size={15}/></button></div>\n    </section>'''
+              s,n=pat.subn(repl,s,count=1)
+              if n!=1: raise SystemExit(f'schedule section replacement failed: {n}')
+              p.write_text(s,encoding='utf-8')
+              css=Path('src/styles.css'); c=css.read_text(encoding='utf-8')
+              extra='''.class-program-summary{border-color:var(--mint-200);background:linear-gradient(145deg,#fff,#f5fbf8)}.class-program-days{margin-bottom:18px}.class-program-form{grid-template-columns:1fr 1fr 2fr auto}.my-lesson-toggle{margin-top:13px;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);background:#fbfdfc;border-radius:12px;color:var(--text)}.my-lesson-toggle input{accent-color:var(--mint-600);width:16px;height:16px}.my-lesson-toggle b,.my-lesson-toggle small{display:block}.my-lesson-toggle b{font-size:11px}.my-lesson-toggle small{font-size:10px;color:var(--muted);margin-top:2px}.class-program-list{display:grid;gap:9px}.class-program-row{display:flex;align-items:center;gap:14px;padding:13px 14px;border:1px solid var(--border);border-radius:14px;background:#fbfdfc}.program-time{width:72px;flex:0 0 72px}.program-time b,.program-time span{display:block}.program-time b{font-size:13px;color:var(--mint-700)}.program-time span{font-size:10px;color:var(--muted);margin-top:2px}.program-main{flex:1;min-width:0}.program-main b,.program-main small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.program-main b{font-size:12px}.program-main small{font-size:10px;color:var(--muted);margin-top:3px}.program-badge{font-size:9px;font-weight:800;color:var(--mint-700);background:var(--mint-100);border:1px solid var(--mint-200);border-radius:999px;padding:5px 8px;white-space:nowrap}'''
+              if '.class-program-summary{' not in c: css.write_text(c+extra,encoding='utf-8')
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src/App.jsx src/styles.css
-          git commit -m 'refactor: make class schedule a dedicated module'
+          git commit -m 'refactor: make class schedule a dedicated module' || true
           git push
-      - name: Remove migration workflow
-        run: |
           git rm .github/workflows/convert-class-schedule.yml
           git commit -m 'chore: remove class schedule migration workflow'
           git push
