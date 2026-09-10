@@ -4,6 +4,7 @@ import { addClass, addLesson, addStudent, attachDocument, checkIntegrity, create
 import { addStudentRecord, checkStudentRecordIntegrity, removeClassStudentRecords, removeStudentRecords } from '../src/studentRecords.js'
 
 const ids = { classId: 'c1', studentId: 's1', groupId: 'g1', lessonId: 'l1', docId: 'd1' }
+const today = '2026-09-10'
 
 test('sınıf ve öğrenci veri girişi', () => {
   let classes = addClass([], '3-A', ids.classId)
@@ -48,9 +49,9 @@ test('öğrenci silme ve öğrenci belgelerini temizleme', () => {
 
 test('öğrenci takip kaydı ve bütünlük kontrolü', () => {
   const classes = [{ id: ids.classId, name: '3-A', students: [{ id: ids.studentId, firstName: 'Zeynep', lastName: 'Kaya' }] }]
-  let records = addStudentRecord([], { studentId: ids.studentId, type: 'note', text: 'Veli ile görüşüldü.' }, 'r1')
-  assert.throws(() => addStudentRecord(records, { studentId: ids.studentId, type: 'note', text: 'Tekrar' }, 'r1'), /zaten mevcut/)
-  records = [...records, { id: 'orphan', studentId: 'deleted', type: 'note', text: 'Yetim' }]
+  let records = addStudentRecord([], { studentId: ids.studentId, type: 'note', text: 'Veli ile görüşüldü.', date: today }, 'r1')
+  assert.throws(() => addStudentRecord(records, { studentId: ids.studentId, type: 'note', text: 'Tekrar', date: today }, 'r1'), /zaten mevcut/)
+  records = [...records, { id: 'orphan', studentId: 'deleted', type: 'note', text: 'Yetim', date: today }]
   const checked = checkStudentRecordIntegrity(classes, records)
   assert.equal(checked.ok, false)
   assert.deepEqual(checked.records.map(x => x.id), ['r1'])
