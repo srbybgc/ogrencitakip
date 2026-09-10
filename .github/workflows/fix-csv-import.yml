@@ -1,0 +1,62 @@
+name: Repair student CSV import
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repair importer and existing imported names
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/App.jsx')
+          s=p.read_text(encoding='utf-8')
+          marker="const initialClasses = []"
+          helper=r'''const repairImportedClasses = (value) => {
+            if (!Array.isArray(value)) return value
+            const phoneRe = /(?:\+?90[\s-]?)?(?:0?5\d{2})[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/g
+            return value.map(cls => ({...cls, students:(cls.students||[]).map(st => {
+              const first=String(st.firstName||'').trim(), last=String(st.lastName||'').trim()
+              const combined=`${first} ${last}`.replace(/\s+/g,' ').trim(), phones=combined.match(phoneRe)||[]
+              if(!phones.length)return st
+              const cleaned=combined.replace(phoneRe,' ').replace(/\s+/g,' ').trim(), parts=cleaned.split(' ').filter(Boolean), next={...st}
+              if(parts.length>=2){next.firstName=parts.slice(0,-1).join(' ');next.lastName=parts.at(-1)}else if(parts.length===1){next.firstName=parts[0];next.lastName=''}
+              if(!next.parentPhone)next.parentPhone=phones[0].trim()
+              return next
+            })}))
+          }
+          '''
+          if 'const repairImportedClasses' not in s:s=s.replace(marker,helper+'\n'+marker,1)
+          s=s.replace("useState(() => load('ot-classes', initialClasses))","useState(() => repairImportedClasses(load('ot-classes', initialClasses)))",1)
+          start=s.index('function StudentImportModal(');end=s.index('function StudentModal(',start)
+          new=r'''function StudentImportModal({onClose,onImport}) {
+            const [file,setFile]=useState(null),[rows,setRows]=useState([]),[error,setError]=useState(''),[loading,setLoading]=useState(false)
+            const norm=x=>String(x??'').replace(/^\ufeff/,'').trim().toLocaleLowerCase('tr')
+            const clean=x=>String(x??'').trim()
+            const map={no:['öğrenci no','ogrenci no','öğrenci numarası','ogrenci numarasi','student number','studentnumber'],ad:['ad','adı','isim','first name','firstname'],soyad:['soyad','soyadı','last name','lastname'],anne:['anne','anne telefonu','anne numarası','anne numarasi','mother phone'],baba:['baba','baba telefonu','baba numarası','baba numarasi','father phone']}
+            const parse=raw=>{if(!raw.length)return [];const h=raw[0].map(norm),known=Object.values(map).flat(),has=h.some(x=>known.includes(x)),data=has?raw.slice(1):raw;const pick=(r,names)=>{for(const n of names){const i=h.indexOf(n);if(i>=0)return r[i]??''}return ''};return data.map(r=>has?{studentNumber:pick(r,map.no),firstName:pick(r,map.ad),lastName:pick(r,map.soyad),parentPhone:clean(pick(r,map.anne)),fatherPhone:clean(pick(r,map.baba))}:{studentNumber:r[1]??'',firstName:r[2]??'',lastName:r[3]??'',parentPhone:clean(r[7]),fatherPhone:clean(r[8])}).map(x=>({...x,studentNumber:clean(x.studentNumber),firstName:clean(x.firstName),lastName:clean(x.lastName)})).filter(x=>x.firstName||x.lastName)}
+            const readFile=async f=>{setFile(f);setRows([]);setError('');setLoading(true);try{const wb=XLSX.read(await f.arrayBuffer(),{type:'array',raw:true,cellText:false,cellDates:false}),ws=wb.Sheets[wb.SheetNames[0]],raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false}),parsed=parse(raw);if(!parsed.length)throw new Error('Dosyada öğrenci adı bulunamadı.');setRows(parsed)}catch(e){setError(e instanceof Error?e.message:'Dosya okunamadı.')}finally{setLoading(false)}}
+            return <Modal title="Toplu Öğrenci Aktar" onClose={onClose} wide><p className="muted">Orijinal listedeki B=Öğrenci No, C=Ad, D=Soyad, H=Anne telefonu, I=Baba telefonu alınır. G ve cinsiyet alınmaz.</p><label className="file-picker"><Upload size={18}/><span>{file?file.name:'Dosya seç'}</span><input type="file" accept=".xlsx,.xls,.csv,.txt,text/plain,text/csv" onChange={e=>e.target.files?.[0]&&readFile(e.target.files[0])}/></label>{loading&&<div className="empty">Dosya okunuyor…</div>}{error&&<Notice message={error}/>} {!loading&&!error&&rows.length>0&&<div className="import-preview"><b>{rows.length} öğrenci bulundu</b>{rows.slice(0,12).map((r,i)=><div key={i}><b>{r.studentNumber||'—'}</b> · {r.firstName} {r.lastName}{r.parentPhone?' · Anne: '+r.parentPhone:''}{r.fatherPhone?' · Baba: '+r.fatherPhone:''}</div>)}</div>}<div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Vazgeç</button><button type="button" className="primary" disabled={!rows.length||loading} onClick={()=>onImport(rows)}>Aktar</button></div></Modal>
+          }
+          '''
+          s=s[:start]+new+s[end:]
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/App.jsx
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: correct student CSV column mapping and repair imported names'
+          git push
+      - name: Remove one-shot workflow
+        if: success()
+        run: |
+          git rm .github/workflows/fix-csv-import.yml
+          git commit -m 'chore: remove one-shot CSV repair workflow'
+          git push
