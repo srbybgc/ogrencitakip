@@ -39,7 +39,14 @@ export default function StudentOverlay() {
       }
     }
     document.addEventListener('click', onClick)
-    const timer = setInterval(() => setDataVersion(v => v + 1), 700)
+    const timer = setInterval(() => {
+      const classes = read('ot-classes')
+      const studentIds = new Set(classes.flatMap(cls => (cls.students || []).map(s => s.id)))
+      const records = read('ot-student-records')
+      const clean = records.filter(item => studentIds.has(item.studentId) && ['note', 'attendance', 'event'].includes(item.type))
+      if (clean.length !== records.length) write('ot-student-records', clean)
+      setDataVersion(v => v + 1)
+    }, 700)
     return () => { document.removeEventListener('click', onClick); clearInterval(timer) }
   }, [])
 
@@ -139,7 +146,7 @@ const styles = {
   avatar: { width: 48, height: 48, borderRadius: '50%', background: '#e7ebf1', display: 'grid', placeItems: 'center', fontWeight: 800, color: '#536076' },
   eyebrow: { display: 'block', color: '#7a8497', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 3 },
   title: { margin: 0, fontSize: 24, letterSpacing: '-.03em', color: '#172033' },
-  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 10 },
   card: { marginBottom: 10 },
   attendance: { display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 12 },
   dateWrap: { marginTop: 12 },
