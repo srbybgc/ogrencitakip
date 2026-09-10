@@ -11,12 +11,16 @@ export function addStudent(classes, classId, firstName, lastName = '', id = cryp
   const first = firstName.trim()
   const last = lastName.trim()
   if (!first) throw new Error('Öğrenci adı boş bırakılamaz.')
-  return classes.map(c => {
+  let found = false
+  const result = classes.map(c => {
     if (c.id !== classId) return c
+    found = true
     const duplicate = c.students.some(s => `${s.firstName} ${s.lastName}`.trim().toLocaleLowerCase('tr') === `${first} ${last}`.trim().toLocaleLowerCase('tr'))
     if (duplicate) throw new Error('Bu öğrenci bu sınıfta zaten mevcut.')
     return { ...c, students: [...c.students, { id, firstName: first, lastName: last }] }
   })
+  if (!found) throw new Error('Sınıf bulunamadı.')
+  return result
 }
 
 export function deleteStudent(classes, classId, studentId) {
@@ -49,6 +53,7 @@ export function deleteLesson(schedule, lessonId) {
 export function attachDocument(documents, document, id = crypto.randomUUID()) {
   if (!document.name?.trim()) throw new Error('Belge adı zorunludur.')
   if (!document.targetType || !document.targetId) throw new Error('Belgenin ilişkilendirileceği kayıt seçilmelidir.')
+  if (!['class', 'student', 'group'].includes(document.targetType)) throw new Error('Belge ilişkilendirme türü geçersiz.')
   return [...documents, { ...document, id, name: document.name.trim() }]
 }
 
@@ -59,10 +64,14 @@ export function deleteDocument(documents, documentId) {
 export function removeClassReferences(classes, groups, schedule, documents, classId) {
   return {
     classes: classes.filter(c => c.id !== classId),
-    groups: groups.map(g => ({ ...g, classIds: g.classIds.filter(id => id !== classId) })).filter(g => g.classIds.length > 0 || !g.classIds),
+    groups: groups.map(g => ({ ...g, classIds: (g.classIds || []).filter(id => id !== classId) })).filter(g => g.classIds.length > 0),
     schedule: schedule.filter(s => s.classId !== classId),
     documents: documents.filter(d => !(d.targetType === 'class' && d.targetId === classId)),
   }
+}
+
+export function removeStudentReferences(documents, studentId) {
+  return documents.filter(d => !(d.targetType === 'student' && d.targetId === studentId))
 }
 
 export function checkIntegrity(classes, groups, schedule, documents) {
