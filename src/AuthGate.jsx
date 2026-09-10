@@ -13,6 +13,7 @@ export default function AuthGate({ children }) {
   const [user, setUser] = useState(undefined)
   const [dataReady, setDataReady] = useState(false)
   const [syncError, setSyncError] = useState('')
+  const [syncAttempt, setSyncAttempt] = useState(0)
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -45,7 +46,7 @@ export default function AuthGate({ children }) {
       active = false
       cleanup()
     }
-  }, [user?.uid])
+  }, [user?.uid, syncAttempt])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -75,7 +76,7 @@ export default function AuthGate({ children }) {
 
   if (!user) return <main className="auth-screen"><section className="auth-card"><div className="brand-mark auth-mark">Ö</div><p className="eyebrow">Güvenli giriş</p><h1>Öğrenci Takip</h1><p className="muted">Sınıflarına ve öğrenci kayıtlarına erişmek için giriş yap.</p><form onSubmit={submit} className="auth-form"><label className="field"><span>E-posta</span><input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="ornek@mail.com" /></label><label className="field"><span>Şifre</span><input type="password" autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="En az 6 karakter" /></label>{error && <div className="auth-error">{error}</div>}<button className="primary auth-submit" disabled={busy}>{busy ? 'Bekleyin…' : mode==='login' ? 'Giriş Yap' : 'Hesap Oluştur'}</button></form><button className="auth-switch" onClick={()=>{setMode(mode==='login'?'signup':'login');setError('')}}>{mode==='login' ? 'İlk kez kullanıyorum — hesap oluştur' : 'Zaten hesabım var — giriş yap'}</button></section></main>
 
-  if (syncError) return <div className="auth-screen"><div className="auth-card"><div className="brand-mark auth-mark">Ö</div><p className="eyebrow">Bağlantı sorunu</p><h1>Veriler hazırlanamadı</h1><p className="muted">{syncError}</p><button className="primary auth-submit" onClick={()=>{setUser({...auth.currentUser})}}>Tekrar Dene</button><button className="auth-switch" onClick={()=>signOut(auth)}>Çıkış Yap</button></div></div>
+  if (syncError) return <div className="auth-screen"><div className="auth-card"><div className="brand-mark auth-mark">Ö</div><p className="eyebrow">Bağlantı sorunu</p><h1>Veriler hazırlanamadı</h1><p className="muted">{syncError}</p><button className="primary auth-submit" onClick={()=>setSyncAttempt(v=>v+1)}>Tekrar Dene</button><button className="auth-switch" onClick={()=>signOut(auth)}>Çıkış Yap</button></div></div>
 
   if (!dataReady) return <div className="auth-screen"><div className="auth-card"><div className="brand-mark auth-mark">Ö</div><h1>Öğrenci Takip</h1><p>Verilerin hazırlanıyor…</p></div></div>
 
