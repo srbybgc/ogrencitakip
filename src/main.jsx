@@ -6,6 +6,7 @@ import StudentOverlay from './StudentOverlay'
 import LifecycleOverlay from './LifecycleOverlay'
 import './firebase'
 import './styles.css'
+import './pastelTheme.css'
 import { repairStoredData } from './integrity'
 
 repairStoredData()
