@@ -18,11 +18,10 @@ test('sınıf silinince sınıfa bağlı öğrencilerin belgeleri de temizlenir'
     { id: 'd3', name: 'Diğer öğrenci', targetType: 'student', targetId: 's2' },
     { id: 'd4', name: 'Diğer sınıf', targetType: 'class', targetId: 'c2' },
   ]
-
   const result = removeClassReferences(classes, groups, schedule, documents, 'c1')
-
   assert.deepEqual(result.classes.map(item => item.id), ['c2'])
   assert.deepEqual(result.groups[0].classIds, ['c2'])
   assert.deepEqual(result.schedule.map(item => item.id), ['l2'])
   assert.deepEqual(result.documents.map(item => item.id), ['d3', 'd4'])
+  assert.deepEqual(result.removedDocuments.map(item => item.id), ['d1', 'd2'])
 })
