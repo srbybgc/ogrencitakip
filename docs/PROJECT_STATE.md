@@ -65,3 +65,12 @@ Firestore kullanıcı altında: `classes`, `groups`, `schedule`, `documents`, `s
 - Arşivlenen sınıflar aktif ekranlardan gizlenir.
 - `trash` Firestore senkronizasyon koleksiyonuna eklendi.
 - Sonraki kalite odağı: silme/geri yükleme gerçek Storage nesneleri ve öğrenci kayıtlarıyla uçtan uca manuel doğrulama; uygulamanın canlı ortamda kontrolü.
+
+
+## UI / academic year decisions (2026-09-10)
+- Arşiv ve Çöp Kutusu üst menünün en sağında yer alır; ekranın altına sabit buton konulmaz.
+- Ana sayfadaki Belge/Dosya Ekle ve Ders Programını Yönet alt kartları kaldırıldı; ilgili modüller üst menüden açılır.
+- Arşiv ekranı aktif sınıfları tek tek arşivleme listesi değildir; arşivlenen sınıflar eğitim öğretim yılına göre gruplanır.
+- Sınıf arşivleme işlemi Sınıf Ayarları üzerinden yapılır.
+- Sınıf oluştururken Eğitim Öğretim Yılı seçilir; geçmiş eğitim öğretim yılları değişmeden korunur ve arşiv mantığı yıl bazlıdır.
+- Gelecek yıl eski sınıfların yeni eğitim öğretim yılına aktarılabilmesi ürün gereksinimidir; eski yıl kaydı değişmemelidir.
