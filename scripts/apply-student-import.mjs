@@ -28,14 +28,20 @@ if (start >= 0 && end > start && !s.includes('const importStudents = (rows) =>')
   s = s.slice(0, start) + handlers + s.slice(end)
 }
 
-s = s.replace(
-  'documents={documents} onDocument={() => setView(\'documents\')} />}',
-  "documents={documents} onDocument={() => setView('documents')} onImportStudents={() => setModal('import-students')} />}",
-)
-s = s.replace(
-  "{modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}",
-  "{modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}\n    {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}",
-)
+if (!s.includes("onImportStudents={() => setModal('import-students')}")) {
+  s = s.replace(
+    'documents={documents} onDocument={() => setView(\'documents\')} />}',
+    "documents={documents} onDocument={() => setView('documents')} onImportStudents={() => setModal('import-students')} />}",
+  )
+}
+
+const importModal = "    {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}"
+const studentModal = "    {modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}"
+s = s.replace(`${importModal}\n${importModal}`, importModal)
+if (!s.includes(importModal)) {
+  s = s.replace(studentModal, `${studentModal}\n${importModal}`)
+}
+
 s = s.replace(
   'function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument })',
   'function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument, onImportStudents })',
