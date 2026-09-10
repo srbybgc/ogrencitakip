@@ -17,6 +17,8 @@ const EMPTY = {
   studentRecords: [],
 }
 
+const OWNER_KEY = 'ot-sync-owner'
+
 const readLocal = () => Object.fromEntries(
   Object.entries(KEY_TO_COLLECTION).map(([key, name]) => {
     try {
@@ -48,15 +50,20 @@ export async function startFirestoreSync(uid) {
   try {
     const remote = await loadUserData(uid)
     const remoteHasData = Object.values(remote).some(items => Array.isArray(items) && items.length > 0)
+    const localOwner = window.localStorage.getItem(OWNER_KEY)
 
     if (remoteHasData) {
       writeLocal(remote, originalSetItem)
-    } else {
+    } else if (localOwner === uid) {
       const local = readLocal()
       await Promise.all(
         Object.entries(local).map(([name, items]) => saveUserCollection(uid, name, items)),
       )
+    } else {
+      // A new/unknown account must never inherit another account's browser data.
+      writeLocal(EMPTY, originalSetItem)
     }
+    originalSetItem(OWNER_KEY, uid)
   } catch (error) {
     console.error('Firestore ilk veri senkronizasyonu başarısız:', error)
     throw error
