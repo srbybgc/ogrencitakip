@@ -16,7 +16,7 @@ const rowsFor = (classes, mode) => {
     İkinciVeli: s.secondParentName || '',
     İkinciVeliTelefon: s.secondParentPhone || '',
     Adres: s.address || '',
-  }))
+  })))
   return mode === 'parents' ? rows.filter(r => r.Veli || r.VeliTelefon || r.İkinciVeli || r.İkinciVeliTelefon) : rows
 }
 
