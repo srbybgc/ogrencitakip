@@ -15,16 +15,17 @@ export function addStudent(classes, classId, firstName, lastName = '', id = cryp
   const result = classes.map(c => {
     if (c.id !== classId) return c
     found = true
-    const duplicate = c.students.some(s => `${s.firstName} ${s.lastName}`.trim().toLocaleLowerCase('tr') === `${first} ${last}`.trim().toLocaleLowerCase('tr'))
+    const students = Array.isArray(c.students) ? c.students : []
+    const duplicate = students.some(s => `${s.firstName} ${s.lastName}`.trim().toLocaleLowerCase('tr') === `${first} ${last}`.trim().toLocaleLowerCase('tr'))
     if (duplicate) throw new Error('Bu öğrenci bu sınıfta zaten mevcut.')
-    return { ...c, students: [...c.students, { id, firstName: first, lastName: last }] }
+    return { ...c, students: [...students, { id, firstName: first, lastName: last }] }
   })
   if (!found) throw new Error('Sınıf bulunamadı.')
   return result
 }
 
 export function deleteStudent(classes, classId, studentId) {
-  return classes.map(c => c.id === classId ? { ...c, students: c.students.filter(s => s.id !== studentId) } : c)
+  return classes.map(c => c.id === classId ? { ...c, students: (Array.isArray(c.students) ? c.students : []).filter(s => s.id !== studentId) } : c)
 }
 
 export function createGroup(groups, name, classIds, id = crypto.randomUUID()) {
@@ -63,7 +64,7 @@ export function deleteDocument(documents, documentId) {
 
 export function removeClassReferences(classes, groups, schedule, documents, classId) {
   const targetClass = classes.find(c => c.id === classId)
-  const studentIds = new Set((targetClass?.students || []).map(student => student.id))
+  const studentIds = new Set((Array.isArray(targetClass?.students) ? targetClass.students : []).map(student => student.id))
   const removedDocuments = documents.filter(d => (
     (d.targetType === 'class' && d.targetId === classId) ||
     (d.targetType === 'student' && studentIds.has(d.targetId))
@@ -86,15 +87,19 @@ export function documentsForStudentRemoval(documents, studentId) {
 }
 
 export function checkIntegrity(classes, groups, schedule, documents) {
-  const classIds = new Set(classes.map(c => c.id))
-  const studentIds = new Set(classes.flatMap(c => c.students.map(s => s.id)))
-  const groupIds = new Set(groups.map(g => g.id))
-  const validSchedule = schedule.filter(s => classIds.has(s.classId))
-  const validDocuments = documents.filter(d => {
+  const safeClasses = Array.isArray(classes) ? classes : []
+  const safeGroups = Array.isArray(groups) ? groups : []
+  const safeSchedule = Array.isArray(schedule) ? schedule : []
+  const safeDocuments = Array.isArray(documents) ? documents : []
+  const classIds = new Set(safeClasses.map(c => c.id))
+  const studentIds = new Set(safeClasses.flatMap(c => (Array.isArray(c.students) ? c.students : []).map(s => s.id)))
+  const groupIds = new Set(safeGroups.map(g => g.id))
+  const validSchedule = safeSchedule.filter(s => classIds.has(s.classId))
+  const validDocuments = safeDocuments.filter(d => {
     if (d.targetType === 'class') return classIds.has(d.targetId)
     if (d.targetType === 'student') return studentIds.has(d.targetId)
     if (d.targetType === 'group') return groupIds.has(d.targetId)
     return false
   })
-  return { schedule: validSchedule, documents: validDocuments, ok: validSchedule.length === schedule.length && validDocuments.length === documents.length }
+  return { schedule: validSchedule, documents: validDocuments, ok: validSchedule.length === safeSchedule.length && validDocuments.length === safeDocuments.length }
 }
