@@ -1,1 +1,0 @@
-Student tracking records are stored per user.
