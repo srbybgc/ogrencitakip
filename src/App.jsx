@@ -5,7 +5,7 @@ import TrashPage from './TrashPage'
 import ClassSchedulePage from './ClassSchedulePage'
 import ReferenceDashboard from './ReferenceDashboard'
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage'
-import { ChevronLeft, ChevronRight, Clock3, FileText, FolderOpen, LayoutGrid, Menu, Plus, Search, Trash2, Upload, Users, X } from 'lucide-react'
+import { Archive, BookOpen, CalendarDays, ChevronLeft, ChevronRight, Clock3, FileText, FileText as FileTextIcon, FolderOpen, Home as HomeIcon, LayoutGrid, Menu, Plus, Search, Settings, Trash2, Upload, UserRound, Users, X } from 'lucide-react'
 import { auth, storage } from './firebase'
 import { addClass as addClassDomain, addLesson as addLessonDomain, addStudent as addStudentDomain, attachDocument as attachDocumentDomain, createGroup as createGroupDomain, deleteDocument as deleteDocumentDomain, deleteGroup as deleteGroupDomain, deleteLesson as deleteLessonDomain, deleteStudent as deleteStudentDomain, removeClassReferences, removeStudentReferences } from './domain'
 
@@ -93,11 +93,8 @@ export default function App() {
   }
 
   return <div className="app-shell">
-    <header className="topbar">
-      <button className="brand" onClick={() => { setError(''); setView('home') }}><span className="brand-mark">Ö</span><span><b>Öğrenci Takip</b><small>Günlük sınıf yönetimi</small></span></button>
-      <nav className="desktop-nav">{[['home','Ana Sayfa'],['classes','Sınıflar'],['groups','Gruplar'],['schedule','Ders Programı'],['documents','Belgeler']].map(([id,label]) => <button key={id} className={view === id ? 'nav-active' : ''} onClick={() => { setError(''); setView(id) }}>{label}</button>)}<button className={view === 'archive' ? 'nav-active' : 'nav-special'} onClick={() => { setError(''); setView('archive') }}>Arşiv</button><button className={view === 'trash' ? 'nav-active' : 'nav-special'} onClick={() => { setError(''); setView('trash') }}>Çöp Kutusu</button></nav>
-      <button className="icon-btn mobile-menu" onClick={() => setModal('menu')}><Menu size={20} /></button>
-    </header>
+    <aside className="topbar sidebar"><button className="brand" onClick={() => { setError(''); setView('home') }}><span className="brand-mark">Ö</span><span><b>Öğrenci Takip</b><small>Daha güzel yarınlar için</small></span></button><nav className="desktop-nav"><button className={view==='home'?'nav-active':''} onClick={()=>setView('home')}><HomeIcon size={22}/><span>Ana Sayfa</span></button><button className={view==='classes'?'nav-active':''} onClick={()=>setView('classes')}><UserRound size={22}/><span>Öğrenciler</span></button><button className={view==='classes'?'nav-active':''} onClick={()=>setView('classes')}><BookOpen size={22}/><span>Sınıflar</span></button><button className={view==='schedule'?'nav-active':''} onClick={()=>setView('schedule')}><CalendarDays size={22}/><span>Ders Programı</span></button><button className={view==='documents'?'nav-active':''} onClick={()=>setView('documents')}><FileTextIcon size={22}/><span>Belgeler</span></button></nav><div className="sidebar-divider"/><nav className="desktop-nav sidebar-lower"><button className={view==='archive'?'nav-active':''} onClick={()=>setView('archive')}><Archive size={22}/><span>Arşiv</span></button><button className={view==='trash'?'nav-active':''} onClick={()=>setView('trash')}><Trash2 size={22}/><span>Çöp Kutusu</span></button><button><Settings size={22}/><span>Ayarlar</span></button></nav><div className="sidebar-quote"><span>“</span><p>Küçük adımlar<br/>büyük değişimler<br/>yaratır.</p><i/></div><button className="icon-btn mobile-menu" onClick={()=>setModal('menu')}><Menu size={20}/></button></aside>
+    <div className="main-area">
     {error && <div className="content"><Notice message={error} /></div>}
     {view === 'home' && <ReferenceDashboard classes={activeClasses} schedule={schedule} documents={documents} search={search} setSearch={setSearch} onClass={goClass} onClasses={() => setView('classes')} onSchedule={() => setView('schedule')} onAddClass={() => { setError(''); setModal('class') }} onNewStudent={() => setView('classes')} onDocument={() => setView('documents')} />}
     {view === 'classes' && <Classes classes={visibleClasses} search={search} setSearch={setSearch} onClass={goClass} onAdd={() => setModal('class')} />}
@@ -113,7 +110,7 @@ export default function App() {
     {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}
     {modal === 'new' && <QuickModal onClose={() => setModal(null)} onClass={() => setModal('class')} onSchedule={() => { setModal(null); setView('schedule') }} onDocument={() => { setModal(null); setView('documents') }} />}
     {modal === 'menu' && <Modal title="Menü" onClose={() => setModal(null)}><div className="menu-list">{[['home','Ana Sayfa'],['classes','Sınıflar'],['groups','Gruplar'],['schedule','Ders Programı'],['documents','Belgeler']].map(([id,label]) => <button key={id} onClick={() => { setView(id); setModal(null) }}>{label}<ChevronRight size={17} /></button>)}</div></Modal>}
-  </div>
+  </div></div>
 }
 
 function Home({ classes, groups, dayLessons, currentLesson, activeDay, setActiveDay, onClass, onSchedule, onAdd, onAddClass, search, setSearch }) {
