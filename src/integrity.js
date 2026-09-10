@@ -10,6 +10,38 @@ const read = (key, fallback) => {
   }
 }
 
+const clean = value => String(value ?? '').replace(/\s+/g, ' ').trim()
+const phoneRe = /(?:\+?90[\s-]?)?(?:0?5\d{2})[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/g
+
+function normalizeStudentFields(classes) {
+  let changed = false
+  const next = classes.map(cls => ({
+    ...cls,
+    students: (cls.students || []).map(student => {
+      const originalFirst = clean(student.firstName)
+      const originalLast = clean(student.lastName)
+      const raw = clean(`${originalFirst} ${originalLast}`)
+      const phones = raw.match(phoneRe) || []
+      let name = clean(raw.replace(phoneRe, ' '))
+      name = name.replace(/^\d{4}\s+/, '').replace(/^[0-9]+[A-Za-zÇĞİÖŞÜçğıöşü]\s+/i, '').trim()
+      const parts = name.split(' ').filter(Boolean)
+      const out = { ...student }
+      if (parts.length >= 2) {
+        out.firstName = parts.slice(0, -1).join(' ')
+        out.lastName = parts.at(-1)
+      }
+      if (!out.parentPhone && phones[0]) out.parentPhone = phones[0].trim()
+      if (!out.secondParentPhone && phones[1]) out.secondParentPhone = phones[1].trim()
+      if (out.firstName !== student.firstName || out.lastName !== student.lastName || out.parentPhone !== student.parentPhone || out.secondParentPhone !== student.secondParentPhone) {
+        changed = true
+        return out
+      }
+      return student
+    })
+  }))
+  return { next, changed }
+}
+
 export function repairStoredData() {
   if (typeof window === 'undefined') return
   const classes = read('ot-classes', [])
@@ -17,8 +49,11 @@ export function repairStoredData() {
   const schedule = read('ot-schedule', [])
   const documents = read('ot-documents', [])
   const studentRecords = read('ot-student-records', [])
-  const result = checkIntegrity(classes, groups, schedule, documents)
-  if (JSON.stringify(result.classes) !== JSON.stringify(classes)) localStorage.setItem('ot-classes', JSON.stringify(result.classes))
+
+  const normalized = normalizeStudentFields(classes)
+  const sourceClasses = normalized.next
+  const result = checkIntegrity(sourceClasses, groups, schedule, documents)
+  if (normalized.changed || JSON.stringify(result.classes) !== JSON.stringify(sourceClasses)) localStorage.setItem('ot-classes', JSON.stringify(result.classes))
   if (result.schedule.length !== schedule.length) localStorage.setItem('ot-schedule', JSON.stringify(result.schedule))
   if (result.documents.length !== documents.length) localStorage.setItem('ot-documents', JSON.stringify(result.documents))
 
