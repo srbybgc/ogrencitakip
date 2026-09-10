@@ -1,184 +1,67 @@
 # Öğrenci Takip — Proje Durumu ve Kararlar
 
-> Bu dosya, proje üzerinde yapılan konuşmalardaki kararların kalıcı çalışma özeti olarak tutulur. Yeni geliştirmelerde önce bu dosya ve mevcut kod birlikte kontrol edilmelidir. Amaç, sohbet geçmişi görünmese bile projenin gereksinimlerinin kaybolmamasıdır.
+> Bu dosya proje hafızasıdır. Yeni geliştirmelerde önce bu dosya ve mevcut kod birlikte kontrol edilir.
 
-## 1. Ürün amacı
+## Ürün amacı
+Öğretmenin sınıflarını, öğrencilerini, ders programını, öğrenci takip kayıtlarını ve belgelerini tek yerden yönetebileceği; telefon/tablet/masaüstünde çalışan Firebase destekli öğrenci takip uygulaması.
 
-Öğretmenin sınıflarını, öğrencilerini, ders programını, öğrenci takip kayıtlarını ve belgelerini tek yerden yönetebileceği; telefon/tablet/masaüstünde kullanılabilen Firebase destekli bir öğrenci takip uygulaması.
+## Veri modeli
+Firestore kullanıcı altında: `classes`, `groups`, `schedule`, `documents`, `studentRecords`, `trash`.
+- Firebase Authentication email/password.
+- Firestore ve Storage kullanıcı UID'si ile izole.
+- Yeni hesap başka kullanıcının localStorage verisini devralmaz.
 
-Canlı hedef: GitHub Pages üzerinde `srbybgc/ogrencitakip`.
+## Sınıflar ve gruplar
+- Sınıflar doğrudan oluşturulur; zorunlu yaş kategorisi yoktur.
+- Gruplar isteğe bağlı üst organizasyondur.
+- Sınıflar Türkçe alfabetik sırada, doğal/numeric karşılaştırmayla gösterilir (`4A`, `4B`, `4C`, `4D`).
+- Öğrenciler ad, sonra soyada göre Türkçe alfabetik sıralanır.
+- Yinelenen sınıf/öğrenci engellenir.
 
-## 2. Temel kullanıcı ve veri modeli
+## Ana sayfa ve ders programı
+- Gün seçimi, haftalık ders programı, sınıflar ve belgeler bulunur.
+- O anda işlenen dersin sınıfı öne çıkar.
+- Pazartesi-Cuma ve aynı sınıfta çakışan ders kontrolü vardır.
 
-- Kullanıcı Firebase Authentication ile kendi hesabına giriş yapar.
-- Her kullanıcının verileri Firestore'da yalnızca kendi UID alanı altında tutulur.
-- Firebase Storage dosyaları da kullanıcı UID'si altında tutulur.
-- Bir kullanıcı başka kullanıcının verisini okuyamaz veya değiştiremez.
-- Yeni hesapta demo/örnek öğrenci verisi gösterilmez.
+## Öğrenci işlemleri
+- Manuel ve toplu öğrenci ekleme.
+- Öğrenci detayında not, olay/görüşme ve yoklama (`Geldi`, `Gelmedi`, `İzinli`) geçmişi.
+- Öğrenci belgeleri ve tarihli kayıtlar.
+- Öğrenci silinince ilişkili kayıtların yetim kalmaması hedeflenir.
 
-Ana veri kümeleri:
-- classes
-- groups
-- schedule
-- documents
-- studentRecords
+## Toplu aktarım
+`.xls`, `.xlsx`, `.csv`, `.txt` desteklenir. Excel/CSV'de Ad-Soyad ayrı sütun veya tek tam ad sütunu; TXT'de satır başına öğrenci. Önizleme, boş/tekrar satır atlama ve sonuç sayacı vardır.
 
-## 3. Sınıf ve grup mantığı
+## Belgeler
+- Öğrenci, sınıf veya grup ile ilişkilendirilebilir.
+- Firebase Storage'da kullanıcıya özel tutulur.
+- Dosya metadata'sı ve Storage yolu korunur.
 
-- Kullanıcı sınıfları doğrudan oluşturur.
-- Başlangıçta 4 yaş, 5 yaş gibi zorunlu üst kategoriler olmayacak.
-- Kullanıcı isterse sonradan üst gruplar oluşturabilir.
-- Grup amacı ana ekrandaki görüntü kalabalığını azaltmaktır.
-- Ana sayfada aynı anda bütün sınıfları ve bütün grupları gereksiz biçimde tekrar göstermemek gerekir.
-- Aynı sınıf adı ikinci kez eklenmeye çalışıldığında uygulama çökmemeli; kullanıcıya anlaşılır hata mesajı göstermelidir.
+## Arşiv ve çöp kutusu
+- Aktif sınıflar arşivlenebilir; arşivlenen sınıflar aktif listelerden gizlenir.
+- Arşivden geri alma vardır.
+- Alt solda **Arşiv** ve **Çöp Kutusu** erişimi vardır.
+- Çöp kutusu silinen sınıf, öğrenci, grup, ders ve belge değişikliklerini çalışma oturumu içinde yakalar; sınıf/öğrenci silinmelerinde ilişkili grup/ders/belge/kayıt snapshot'ı da saklanır.
+- Geri yükleme ve çöp kutusunu boşaltma vardır.
+- Çöp kutusu Firestore'da `trash` koleksiyonuyla kullanıcıya özel senkronize edilir.
+- Arşivlenen sınıflara eğitim yılı etiketi atanır (`YYYY-YYYY`).
 
-## 4. Ana sayfa
+## Veri bütünlüğü ve senkronizasyon
+- Yetim ders/belge/studentRecord kontrolleri yapılır.
+- Grup sınıf ID'leri temizlenir.
+- Firestore senkronizasyonu serialized queue ile yapılır.
+- Bozuk localStorage verisi uygulamayı düşürmez.
 
-Ana sayfada:
-- arama,
-- sınıflar/gruplar,
-- gün seçimi,
-- haftalık ders programı,
-- belgeler/dosyalar
-bulunur.
+## UI ve kalite
+- Türkçe, mobil/tablet/masaüstü.
+- Boş ekran yerine anlaşılır hata/boş durumları.
+- `npm test` ve `npm run build` her önemli değişiklikte çalıştırılır; GitHub Actions Build ve Pages doğrulanır.
 
-Bugünün dersleri gösterilirken mevcut gün ve saate denk gelen ders öncelikli olmalıdır. Özellikle o anda ders işlenen sınıf öne çıkarılmalıdır.
-
-## 5. Öğrenci işlemleri
-
-Sınıf detayında:
-- öğrenci ekleme,
-- öğrenci silme,
-- öğrenci adına göre tekrar kayıt kontrolü,
-- öğrenci detayına girme,
-- öğrenci takip kayıtları,
-- öğrenciye bağlı belgeler
-olmalıdır.
-
-Öğrenci takip kayıtları:
-- not,
-- yoklama: Geldi / Gelmedi / İzinli,
-- etkinlik/görüşme kaydı,
-- tarih,
-- geçmiş kayıtların görüntülenmesi ve silinmesi.
-
-## 6. Öğrenci toplu veri aktarımı — ÖNEMLİ
-
-Öğrenci ekleme yalnızca Excel ile sınırlı olmamalıdır.
-
-Desteklenecek/veri aktarım katmanının hedefi:
-- `.xls`
-- `.xlsx`
-- `.csv`
-- `.txt` / düz metin
-
-Format ayrıntıları mümkün olduğunca kullanıcı dostu olmalıdır. Excel/CSV için Ad ve Soyad ayrı sütunları desteklenmeli; tek sütunda tam ad-soyad da desteklenmelidir. Düz metinde satır bazlı öğrenci isimleri okunabilmelidir.
-
-İçe aktarma sırasında:
-- boş satırlar atlanmalı,
-- hatalı satırlar uygulamayı düşürmemeli,
-- aynı sınıfta zaten bulunan öğrenciler tekrar eklenmemeli,
-- mümkünse kullanıcıya kaç öğrencinin eklendiği ve kaç satırın atlandığı gösterilmelidir,
-- aktarım öncesinde önizleme yapılması tercih edilir.
-
-Bu özellik için kullanılan kütüphane yalnızca Excel'e özel kalacak şekilde tasarlanmamalı; parser katmanı yeni formatların eklenmesine uygun olmalıdır.
-
-## 7. Belge/dosya yönetimi
-
-Belge/dosya alanı ana sayfada bulunmalıdır.
-
-Dosya yüklendikten sonra kullanıcı dosyanın neyle ilişkilendirileceğini seçer:
-- öğrenci,
-- sınıf,
-- grup.
-
-Dosya türü gereksiz yere kısıtlanmamalıdır; Storage'a yüklenebilen yaygın belge/dosya formatları desteklenmelidir. Dosyanın adı, türü, ilişkisi, oluşturulma bilgisi ve Storage yolu/metaverisi korunmalıdır.
-
-Bir öğrenci veya sınıf silindiğinde ilişkili belge metadata kayıtları da temizlenmelidir. Mümkün olduğunda gerçek Storage nesnelerinin de yetim kalmaması sağlanmalıdır.
-
-## 8. Ders programı
-
-- Pazartesi–Cuma dersleri.
-- Sınıf, ders adı, başlangıç ve bitiş saati.
-- Aynı sınıf için aynı gün çakışan derslere izin verilmez.
-- Güncel saat aralığındaki ders ana sayfada öncelik kazanır.
-
-## 9. Veri bütünlüğü
-
-Aşağıdaki kontroller korunmalıdır:
-- olmayan sınıfa bağlı ders bulunmaması,
-- olmayan öğrenciye bağlı takip kaydı bulunmaması,
-- olmayan sınıf/öğrenci/gruba bağlı belge bulunmaması,
-- gruplarda olmayan sınıf ID'lerinin temizlenmesi,
-- bozuk yerel verinin uygulamayı çökertmemesi.
-
-Silme işlemleri ilişkili kayıtları temizlemelidir.
-
-## 10. Firebase
-
-Firestore kuralları kullanıcı UID'sine göre sınırlandırılmıştır.
-Storage kuralları da kullanıcı UID'sine göre sınırlandırılmıştır.
-
-Veri senkronizasyonu:
-- yerel veri geçişi/çevrimdışı kullanım korunur,
-- Firebase'e kullanıcıya özel senkronizasyon yapılır,
-- senkronizasyon hatalarında uygulama anlaşılır şekilde hata/retry sunar,
-- kullanıcılar arasında localStorage verisi karışmamalıdır.
-
-## 11. Kimlik doğrulama
-
-Firebase Email/Password Authentication kullanılacak.
-
-Kullanıcı uygulamada kendi hesabını oluşturup giriş yapar. Proje geliştirme aşamasında sabit/genel bir kullanıcı adı ve şifre tanımlanmış kabul edilmemelidir.
-
-## 12. Arayüz
-
-- Türkçe.
-- Mobil ve tablet öncelikli, masaüstünde de kullanılabilir.
-- Ana navigasyon: Ana Sayfa, Öğrenciler, Ders Programı, Dersler/Raporlar gibi bölümler ürün geliştikçe korunmalı.
-- Arayüz gereksiz kalabalık oluşturmamalı.
-- Hata durumları boş ekran/React crash şeklinde görünmemeli.
-
-## 13. Kalite kontrol
-
-Her önemli değişiklikten sonra:
-1. `npm test`
-2. `npm run build`
-3. mümkünse GitHub Actions sonuçları
-kontrol edilmelidir.
-
-Canlıya çıkmadan önce özellikle:
-- sınıf ekleme/tekrar sınıf ekleme,
-- öğrenci ekleme/tekrar öğrenci ekleme,
-- toplu öğrenci aktarımı tüm hedef formatları,
-- öğrenci silme ve ilişkili kayıt temizliği,
-- belge yükleme/ilişkilendirme/silme,
-- grup oluşturma/silme,
-- ders ekleme/çakışma kontrolü,
-- Firebase login/senkronizasyon,
-- mobil/tablet görünümü
-kontrol edilmelidir.
-
-## 14. Geliştirme ilkesi
-
-Bu dosya sohbet geçmişinin yerine geçecek proje hafızasıdır. Yeni bir karar alındığında bu dosya güncellenmelidir. Bir özellik konuşmada kararlaştırıldıysa, yalnızca son kullanıcı mesajına bakarak kapsam daraltılmamalıdır.
-
-Özellikle "sadece Excel" yaklaşımı yanlıştır: öğrenci toplu veri aktarımı XLS/XLSX yanında CSV ve düz metin desteğine sahip olmalıdır.
-
-## 15. 2026-09-10 geliştirme notu
-
-Çoklu öğrenci aktarımı için hazırlanan GitHub Actions yaması `70e0d4c` commit'inde workflow olarak eklendi; Build ve Pages bu commit için başarılı oldu, ancak workflow'un kendisi docs değişikliği tetikleyicisine bağlı olduğundan henüz kaynak dosyalara uygulanmadı. Bir sonraki adım bu workflow'u tetikleyip oluşan kaynak değişikliklerini doğrulamaktır.
-
-## 16. 2026-09-10 devam notu
-
-Import workflow sözdizimi sadeleştirildi ve yeni commit `d1b0724` ile güncellendi. Bu committen sonra docs dosyasına yapılan bu değişiklik workflow'u gerçek anlamda tetiklemek için kullanılıyor. Workflow tamamlandıktan sonra geçici workflow kendisini kaldırmalı; ardından Build ve Pages yeniden doğrulanmalı.
-
-## 17. 2026-09-10 sonuç notu
-
-Çoklu öğrenci aktarımı artık uygulamanın gerçek kaynak koduna işlendi. `xlsx` bağımlılığı kalıcı olarak `package.json` içinde tutuluyor; arayüz XLS/XLSX, CSV ve TXT dosyalarını kabul ediyor, aktarım öncesi önizleme gösteriyor ve boş/tekrar satırları güvenli biçimde atlıyor. Öğrenci detayları `StudentOverlay` üzerinden not, olay ve yoklama geçmişini destekliyor.
-
-Geçici öğrenci-import patch scripti ve bunun için oluşturulan eski `app-fix*` / `complete-student-import` workflow'ları kaldırıldı. `build.yml` artık kaynak kodu değiştirmiyor; yalnızca bağımlılık kurulumu, test ve production build doğrulaması yapıyor.
-
-Build doğrulaması: 18 test geçti ve production build başarılı. Son kaynak doğrulamasında `src/App.jsx` içinde `XLSX` importu, `importStudents` handler'ı ve `StudentImportModal` bulundu; sınıf detayında `Toplu Aktar` eylemi mevcut.
-
-Kalan canlı doğrulama: son temizlik commitinden sonra GitHub Pages deployunun başarılı tamamlanması ve canlı uygulamanın güncel committen servis edildiğinin kontrol edilmesi. Bundan sonra yalnızca gerçekten eksik olan işlevsel/entegrasyon sorunları düzeltilmelidir.
+## Son geliştirme notu — 2026-09-10
+- Öğrenci çoklu aktarımı gerçek kaynak koda işlendi; XLS/XLSX/CSV/TXT çalışır.
+- Sınıf ve öğrenci alfabetik sıralaması eklendi.
+- Yinelenen Toplu Aktar butonları temizlendi.
+- Arşiv/geri alma ve Çöp Kutusu/geri yükleme arayüzü eklendi.
+- Arşivlenen sınıflar aktif ekranlardan gizlenir.
+- `trash` Firestore senkronizasyon koleksiyonuna eklendi.
+- Sonraki kalite odağı: silme/geri yükleme gerçek Storage nesneleri ve öğrenci kayıtlarıyla uçtan uca manuel doğrulama; uygulamanın canlı ortamda kontrolü.
