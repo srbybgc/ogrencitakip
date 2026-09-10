@@ -5,6 +5,7 @@ const KEY_TO_COLLECTION = {
   'ot-groups': 'groups',
   'ot-schedule': 'schedule',
   'ot-documents': 'documents',
+  'ot-student-records': 'studentRecords',
 }
 
 const EMPTY = {
@@ -12,6 +13,7 @@ const EMPTY = {
   groups: [],
   schedule: [],
   documents: [],
+  studentRecords: [],
 }
 
 const readLocal = () => Object.fromEntries(
