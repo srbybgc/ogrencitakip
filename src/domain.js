@@ -41,8 +41,8 @@ export function deleteGroup(groups, groupId) {
 export function addLesson(schedule, lesson, id = crypto.randomUUID()) {
   if (!lesson.classId || !lesson.lesson?.trim()) throw new Error('Sınıf ve ders adı zorunludur.')
   if (!lesson.start || !lesson.end || lesson.start >= lesson.end) throw new Error('Ders başlangıç ve bitiş saatleri geçersiz.')
-  const clash = schedule.some(s => s.day === lesson.day && overlap(s.start, s.end, lesson.start, lesson.end))
-  if (clash) throw new Error('Bu saat aralığında başka bir ders bulunuyor.')
+  const clash = schedule.some(s => s.classId === lesson.classId && s.day === lesson.day && overlap(s.start, s.end, lesson.start, lesson.end))
+  if (clash) throw new Error('Bu sınıfın bu saat aralığında başka bir dersi bulunuyor.')
   return [...schedule, { ...lesson, id, lesson: lesson.lesson.trim() }]
 }
 
