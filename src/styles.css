@@ -5,3 +5,5 @@
 .nav-special{border:1px solid #e1e6ee!important;background:#fff!important;color:#4f5b6e!important}.nav-special:hover{background:#f0f3f7!important;color:#172033!important}.detail-actions{flex-wrap:wrap}
 
 .home-day-title{font-size:clamp(30px,4vw,44px)!important;margin:0!important;text-transform:capitalize}
+
+.home-search{margin:0 0 14px}.star-note{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700}.star-note input{width:auto}.home-day-title{text-transform:capitalize}

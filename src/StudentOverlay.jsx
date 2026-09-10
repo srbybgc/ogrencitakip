@@ -22,7 +22,7 @@ const fullName = student => `${student.firstName} ${student.lastName}`.trim()
 export default function StudentOverlay() {
   const [student, setStudent] = useState(null)
   const [dataVersion, setDataVersion] = useState(0)
-  const [recordType, setRecordType] = useState('note')
+  const [starred, setStarred] = useState(false)
   const [text, setText] = useState('')
   const [date, setDate] = useState(dateKey())
   const [error, setError] = useState('')
@@ -45,7 +45,7 @@ export default function StudentOverlay() {
       const found = candidates.length === 1 ? candidates[0] : candidates.find(s => s.className === className)
       if (found) {
         setStudent(found)
-        setRecordType('note')
+        setStarred(false)
         setText('')
         setDate(dateKey())
         setError('')
@@ -72,40 +72,19 @@ export default function StudentOverlay() {
     return () => clearInterval(timer)
   }, [student])
 
-  const records = useMemo(() => read('ot-student-records').filter(item => item.studentId === student?.id).sort((a, b) => `${b.date || ''}${b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.createdAt || ''}`)), [student, dataVersion])
+  const records = useMemo(() => read('ot-student-records').filter(item => item.studentId === student?.id).sort((a, b) => `${b.date || ''}${b.updatedAt || b.createdAt || ''}`.localeCompare(`${a.date || ''}${a.updatedAt || a.createdAt || ''}`)), [student, dataVersion])
   const documents = useMemo(() => read('ot-documents').filter(item => item.targetType === 'student' && item.targetId === student?.id), [student, dataVersion])
 
   if (!student) return null
 
   const addRecord = () => {
     try {
-      const record = { studentId: student.id, type: recordType, text: text.trim(), date, createdAt: new Date().toISOString() }
-      const next = addStudentRecord(read('ot-student-records'), record, uid())
-      write('ot-student-records', next)
-      setText('')
-      setError('')
-      setDataVersion(v => v + 1)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Kayıt eklenemedi.')
-    }
-  }
-
-  const addAttendance = status => {
-    try {
-      const record = { studentId: student.id, type: 'attendance', text: status, status, date, createdAt: new Date().toISOString() }
-      const next = addStudentRecord(read('ot-student-records'), record, uid())
-      write('ot-student-records', next)
-      setError('')
-      setDataVersion(v => v + 1)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Yoklama kaydedilemedi.')
-    }
-  }
-
-  const removeRecord = id => {
-    if (!window.confirm('Bu kaydı silmek istediğinizden emin misiniz?')) return
-    write('ot-student-records', deleteStudentRecord(read('ot-student-records'), id))
-    setDataVersion(v => v + 1)
+      if (!text.trim()) { setError('Not boş bırakılamaz.'); return }
+      const now = new Date().toISOString()
+      const record = { studentId: student.id, type: 'note', text: text.trim(), starred, date, createdAt: now, updatedAt: now }
+      write('ot-student-records', addStudentRecord(read('ot-student-records'), record, uid()))
+      setText(''); setStarred(false); setError(''); setDataVersion(v => v + 1)
+    } catch (e) { setError(e instanceof Error ? e.message : 'Not kaydedilemedi.') }
   }
 
   return <div style={styles.backdrop} onMouseDown={() => setStudent(null)}>
@@ -144,32 +123,17 @@ export default function StudentOverlay() {
         </div>}
       </section>
 
-      <div style={styles.grid}>
-        <section className="card" style={styles.card}>
-          <div className="section-title">Bugünkü Yoklama</div>
-          <p className="muted">{dateLabel(date)}</p>
-          <div style={styles.attendance}>
-            {['Geldi', 'Gelmedi', 'İzinli'].map(status => <button key={status} className="secondary" onClick={() => addAttendance(status)}>{status}</button>)}
-          </div>
-          <div style={styles.dateWrap}><label className="field"><span>Tarih</span><input type="date" value={date} onChange={e => setDate(e.target.value)} /></label></div>
-        </section>
-
-        <section className="card" style={styles.card}>
-          <div className="section-title">Yeni Kayıt</div>
-          <div style={styles.typeRow}>
-            <button className={recordType === 'note' ? 'primary small' : 'secondary'} onClick={() => setRecordType('note')}>Not</button>
-            <button className={recordType === 'event' ? 'primary small' : 'secondary'} onClick={() => setRecordType('event')}>Olay</button>
-          </div>
-          <textarea value={text} onChange={e => setText(e.target.value)} placeholder={recordType === 'note' ? 'Öğrenci hakkında kısa not…' : 'Gerçekleşen olay / görüşme…'} style={styles.textarea} />
-          <button className="primary" onClick={addRecord}>Kaydet</button>
-        </section>
-      </div>
+      <section className="card" style={styles.card}>
+        <div className="section-head"><div><div className="section-title">Not Ekle</div><p className="muted">Öğrenciyle ilgili önemli bilgileri tarihçeye ekle.</p></div><label className="star-note"><input type="checkbox" checked={starred} onChange={e=>setStarred(e.target.checked)}/> ★ Yıldızlı not</label></div>
+        <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Öğrenci hakkında not…" style={styles.textarea} />
+        <div className="modal-actions"><label className="field"><span>Tarih</span><input type="date" value={date} onChange={e=>setDate(e.target.value)} /></label><button className="primary" onClick={addRecord}>Notu Kaydet</button></div>
+      </section>
 
       <section className="card" style={styles.card}>
         <div className="section-head"><div><div className="section-title">Öğrenci Geçmişi</div><p className="muted">Notlar, olaylar ve yoklama kayıtları</p></div><span className="hint">{records.length} kayıt</span></div>
         <div style={styles.history}>
           {records.map(record => <div key={record.id} style={styles.record}>
-            <div style={styles.recordTop}><b>{record.type === 'attendance' ? 'Yoklama' : record.type === 'event' ? 'Olay' : 'Not'}</b><small>{record.date ? dateLabel(record.date) : 'Tarihsiz'}</small></div>
+            <div style={styles.recordTop}><b>{record.starred ? '★ ' : ''}Not</b><small>{record.date ? dateLabel(record.date) : 'Tarihsiz'} · Kaydedildi {record.updatedAt ? new Date(record.updatedAt).toLocaleString('tr-TR') : (record.createdAt ? new Date(record.createdAt).toLocaleString('tr-TR') : '')}</small></div>
             <div style={styles.recordBody}>{record.text || record.status || '—'}</div>
             <button className="icon-btn danger" onClick={() => removeRecord(record.id)} aria-label="Kaydı sil">×</button>
           </div>)}
