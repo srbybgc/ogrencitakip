@@ -13,25 +13,17 @@ export default function LifecycleOverlay(){
  useEffect(()=>write('ot-trash',trash),[trash])
  useEffect(()=>{
   const a=()=>setOpen('a'),t=()=>setOpen('t'),ac=()=>{const c=read('classes').find(x=>x.id===window.__otSelectedClass);if(c)archive(c.id)}
-  window.addEventListener('open-archive',a)
-  window.addEventListener('open-trash',t)
-  window.addEventListener('archive-selected-class',ac)
+  window.addEventListener('open-archive',a);window.addEventListener('open-trash',t);window.addEventListener('archive-selected-class',ac)
   const closeForMainNav=e=>{
-   const button=e.target?.closest?.('.desktop-nav button')
-   if(!button)return
-   const text=button.textContent?.trim()||''
-   if(text==='Arşiv'||text==='Çöp Kutusu')return
+   const button=e.target?.closest?.('.desktop-nav button'); if(!button)return
+   const text=button.textContent?.trim()||''; if(text==='Arşiv'||text==='Çöp Kutusu')return
    setOpen(null)
-   const node=document.querySelector('.lifecycle-page')
-   if(node)node.style.display='none'
+   const node=document.querySelector('.lifecycle-page'); if(node)node.style.display='none'
   }
   document.addEventListener('pointerdown',closeForMainNav,true)
   document.addEventListener('mousedown',closeForMainNav,true)
   document.addEventListener('click',closeForMainNav,true)
-  return()=>{
-   window.removeEventListener('open-archive',a);window.removeEventListener('open-trash',t);window.removeEventListener('archive-selected-class',ac)
-   document.removeEventListener('pointerdown',closeForMainNav,true);document.removeEventListener('mousedown',closeForMainNav,true);document.removeEventListener('click',closeForMainNav,true)
-  }
+  return()=>{window.removeEventListener('open-archive',a);window.removeEventListener('open-trash',t);window.removeEventListener('archive-selected-class',ac);document.removeEventListener('pointerdown',closeForMainNav,true);document.removeEventListener('mousedown',closeForMainNav,true);document.removeEventListener('click',closeForMainNav,true)}
  },[])
  useEffect(()=>{const tick=()=>{if(busy.current)return;const n=snap(),p=prev.current,t=read('ot-trash'),seen=new Set(t.map(x=>`${x.type}:${x.data?.id}`)),add=[];const put=(type,data,extra={})=>{if(!data?.id||seen.has(`${type}:${data.id}`))return;seen.add(`${type}:${data.id}`);add.push({id:uid(),type,data,...extra,deletedAt:new Date().toISOString()})};const nc=new Set(n.classes.map(x=>x.id));for(const c of p.classes)if(!nc.has(c.id))put('class',c,{groups:p.groups.filter(g=>(g.classIds||[]).includes(c.id)),schedule:p.schedule.filter(s=>s.classId===c.id),documents:p.documents.filter(d=>(d.targetType==='class'&&d.targetId===c.id)||(d.targetType==='student'&&(c.students||[]).some(s=>d.targetId===s.id))),records:p.records.filter(r=>(c.students||[]).some(s=>r.studentId===s.id))});const ns=new Set(n.classes.flatMap(c=>(c.students||[]).map(s=>`${c.id}:${s.id}`)));for(const c of p.classes)for(const st of c.students||[])if(!ns.has(`${c.id}:${st.id}`)&&nc.has(c.id))put('student',st,{classId:c.id,documents:p.documents.filter(d=>d.targetType==='student'&&d.targetId===st.id),records:p.records.filter(r=>r.studentId===st.id)});const cmp=(type,a,b)=>{const ids=new Set(b.map(x=>x.id));for(const x of a)if(!ids.has(x.id))put(type,x)};cmp('group',p.groups,n.groups);cmp('lesson',p.schedule,n.schedule);cmp('document',p.documents,n.documents);if(add.length)setTrash(v=>[...v,...add]);prev.current=n};const timer=setInterval(tick,700);return()=>clearInterval(timer)},[])
  const archive=id=>{const y=new Date().getFullYear();write('classes',read('classes').map(c=>c.id===id?{...c,archivedAt:new Date().toISOString(),academicYear:c.academicYear||`${y}-${y+1}`}:c));setOpen('a')}
@@ -39,8 +31,8 @@ export default function LifecycleOverlay(){
  const restore=x=>{busy.current=true;try{if(x.type==='class'){if(!read('classes').some(c=>c.id===x.data.id))write('classes',[...read('classes'),x.data]);for(const k of ['groups','schedule','documents','records'])if(Array.isArray(x[k])){const a=read(k),ids=new Set(a.map(v=>v.id));write(k,[...a,...x[k].filter(v=>!ids.has(v.id))])}}else if(x.type==='student'){write('classes',read('classes').map(c=>c.id===x.classId&&!(c.students||[]).some(s=>s.id===x.data.id)?{...c,students:[...(c.students||[]),x.data]}:c));for(const k of ['documents','records'])if(Array.isArray(x[k])){const a=read(k),ids=new Set(a.map(v=>v.id));write(k,[...a,...x[k].filter(v=>!ids.has(v.id))])}}else{const k=x.type==='group'?'groups':x.type==='lesson'?'schedule':'documents';const a=read(k);if(!a.some(v=>v.id===x.data.id))write(k,[...a,x.data])}setTrash(v=>v.filter(v=>v.id!==x.id))}finally{busy.current=false}}
  const archived=read('classes').filter(c=>c.archivedAt),years=Object.entries(archived.reduce((a,c)=>{const y=c.academicYear||'Diğer';(a[y]??=[]).push(c);return a},{})).sort((a,b)=>b[0].localeCompare(a[0],'tr'))
  if(!open)return null
- return <main className="content lifecycle-page" style={{position:'fixed',top:72,left:345,right:0,bottom:0,zIndex:19,overflow:'auto',background:'#f5f7fb',paddingTop:28}}>
-  <div style={{maxWidth:1180,margin:'0 auto',padding:'0 24px 40px'}}>
+ return <main className="content lifecycle-page" style={{position:'fixed',top:0,left:250,right:0,bottom:0,zIndex:39,overflow:'auto',background:'#f5f7fb',paddingTop:38}}>
+  <div style={{maxWidth:1180,margin:'0 auto',padding:'0 42px 40px'}}>
    <div className="page-head"><div><p className="eyebrow">Kayıt yönetimi</p><h1>{open==='a'?'Arşiv':'Çöp Kutusu'}</h1><p className="muted">{open==='a'?'Arşivlenen sınıfları eğitim öğretim yılına göre yönet.':'Silinen kayıtları incele, geri yükle veya kalıcı olarak kaldır.'}</p></div></div>
    {open==='a'?<section className="card"><div className="section-head"><div><div className="section-title"><Archive size={18}/> Arşivlenen Sınıflar</div><p className="muted">Toplam {archived.length} sınıf</p></div></div><div className="lifecycle-list">{years.map(([year,items])=><div key={year} className="lifecycle-year"><h3>{year}</h3>{items.map(c=><div className="lifecycle-row" key={c.id}><span><b>{c.name}</b><small>{c.students?.length||0} öğrenci</small></span><button className="secondary" onClick={()=>unarchive(c.id)}><ArchiveRestore size={14}/> Geri Al</button></div>)}</div>)}{!archived.length&&<div className="empty">Arşiv boş.</div>}</div></section>:<section className="card"><div className="section-head"><div><div className="section-title"><Trash2 size={18}/> Silinen Kayıtlar</div><p className="muted">Toplam {trash.length} kayıt</p></div>{trash.length>0&&<button className="danger-outline" onClick={()=>{if(confirm('Çöp kutusundaki tüm kayıtları kalıcı olarak silmek istediğinizden emin misiniz?'))setTrash([])}}>Çöp Kutusunu Boşalt</button>}</div><div className="lifecycle-list">{trash.slice().reverse().map(x=><div className="lifecycle-row" key={x.id}><span><b>{label(x)}</b><small>{new Date(x.deletedAt).toLocaleString('tr-TR')}</small></span><div className="row-actions"><button className="secondary" onClick={()=>restore(x)}><RotateCcw size={14}/> Geri Yükle</button><button className="icon-btn danger" title="Kalıcı sil" onClick={()=>{if(confirm('Bu kaydı kalıcı olarak silmek istediğinizden emin misiniz?'))setTrash(v=>v.filter(y=>y.id!==x.id))}}><Trash2 size={14}/></button></div></div>)}{!trash.length&&<div className="empty">Çöp kutusu boş.</div>}</div></section>}
   </div>
