@@ -11,7 +11,11 @@ const read = (key, fallback = []) => {
   }
 }
 const write = (key, value) => localStorage.setItem(key, JSON.stringify(value))
-const dateKey = () => new Date().toISOString().slice(0, 10)
+const dateKey = () => {
+  const d = new Date()
+  const pad = value => String(value).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
 const dateLabel = value => new Date(`${value}T12:00:00`).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
 const fullName = student => `${student.firstName} ${student.lastName}`.trim()
 
