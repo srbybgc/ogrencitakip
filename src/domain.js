@@ -4,6 +4,12 @@ const compareTr = (a, b) => String(a ?? '').localeCompare(String(b ?? ''), 'tr',
 
 export function sortStudents(students) {
   return [...(Array.isArray(students) ? students : [])].sort((a, b) => {
+    const numberA = String(a.studentNumber ?? '')
+    const numberB = String(b.studentNumber ?? '')
+    if (numberA || numberB) {
+      const numberCompare = numberA.localeCompare(numberB, 'tr', { numeric: true, sensitivity: 'base' })
+      if (numberCompare) return numberCompare
+    }
     const first = compareTr(a.firstName, b.firstName)
     return first || compareTr(a.lastName, b.lastName)
   })
@@ -31,7 +37,7 @@ export function addStudent(classes, classId, firstName, lastName = '', id = cryp
     const students = Array.isArray(c.students) ? c.students : []
     const duplicate = students.some(s => `${s.firstName} ${s.lastName}`.trim().toLocaleLowerCase('tr') === `${first} ${last}`.trim().toLocaleLowerCase('tr'))
     if (duplicate) throw new Error('Bu öğrenci bu sınıfta zaten mevcut.')
-    return { ...c, students: sortStudents([...students, { id, firstName: first, lastName: last, birthDate: details.birthDate || '', gender: details.gender || '', parentName: details.parentName || '', parentPhone: details.parentPhone || '', secondParentName: details.secondParentName || '', secondParentPhone: details.secondParentPhone || '', address: details.address || '' }]) }
+    return { ...c, students: sortStudents([...students, { id, firstName: first, lastName: last, studentNumber: String(details.studentNumber ?? '').trim(), birthDate: details.birthDate || '', gender: details.gender || '', parentName: details.parentName || '', parentPhone: details.parentPhone || '', secondParentName: details.secondParentName || '', secondParentPhone: details.secondParentPhone || '', address: details.address || '' }]) }
   })
   if (!found) throw new Error('Sınıf bulunamadı.')
   return sortClasses(result)
@@ -78,10 +84,7 @@ export function deleteDocument(documents, documentId) {
 export function removeClassReferences(classes, groups, schedule, documents, classId) {
   const targetClass = classes.find(c => c.id === classId)
   const studentIds = new Set((Array.isArray(targetClass?.students) ? targetClass.students : []).map(student => student.id))
-  const removedDocuments = documents.filter(d => (
-    (d.targetType === 'class' && d.targetId === classId) ||
-    (d.targetType === 'student' && studentIds.has(d.targetId))
-  ))
+  const removedDocuments = documents.filter(d => ((d.targetType === 'class' && d.targetId === classId) || (d.targetType === 'student' && studentIds.has(d.targetId))))
   return {
     classes: classes.filter(c => c.id !== classId),
     groups: groups.map(g => ({ ...g, classIds: (g.classIds || []).filter(id => id !== classId) })).filter(g => g.classIds.length > 0),
