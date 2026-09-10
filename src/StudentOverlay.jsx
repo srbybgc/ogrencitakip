@@ -99,6 +99,7 @@ export default function StudentOverlay() {
   }
 
   const removeRecord = id => {
+    if (!window.confirm('Bu kaydı silmek istediğinizden emin misiniz?')) return
     write('ot-student-records', deleteStudentRecord(read('ot-student-records'), id))
     setDataVersion(v => v + 1)
   }
@@ -114,6 +115,19 @@ export default function StudentOverlay() {
       </div>
 
       {error && <div className="auth-error" style={{ marginBottom: 12 }}>{error}</div>}
+
+      <section className="card" style={styles.card}>
+        <div className="section-title">Öğrenci Bilgileri</div>
+        <div style={styles.infoGrid}>
+          <div><small>Doğum tarihi</small><b>{student.birthDate ? dateLabel(student.birthDate) : 'Belirtilmedi'}</b></div>
+          <div><small>Cinsiyet</small><b>{student.gender || 'Belirtilmedi'}</b></div>
+          <div><small>Veli</small><b>{student.parentName || 'Belirtilmedi'}</b></div>
+          <div><small>Veli telefonu</small><b>{student.parentPhone || 'Belirtilmedi'}</b></div>
+          <div><small>İkinci veli</small><b>{student.secondParentName || 'Belirtilmedi'}</b></div>
+          <div><small>İkinci veli telefonu</small><b>{student.secondParentPhone || 'Belirtilmedi'}</b></div>
+          <div style={{gridColumn:'1 / -1'}}><small>Adres</small><b>{student.address || 'Belirtilmedi'}</b></div>
+        </div>
+      </section>
 
       <div style={styles.grid}>
         <section className="card" style={styles.card}>
@@ -165,6 +179,7 @@ const styles = {
   eyebrow: { display: 'block', color: '#7a8497', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 3 },
   title: { margin: 0, fontSize: 24, letterSpacing: '-.03em', color: '#172033' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 10 },
+  infoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, marginTop: 12 },
   card: { marginBottom: 10 },
   attendance: { display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 12 },
   dateWrap: { marginTop: 12 },

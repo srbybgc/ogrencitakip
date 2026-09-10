@@ -3,3 +3,5 @@
 .detail-actions{display:flex;gap:8px;align-items:center}.secondary{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer}.secondary.small{padding:8px 11px;font-size:13px}.file-picker{display:flex;align-items:center;gap:10px;border:1px dashed var(--border);border-radius:12px;padding:16px;cursor:pointer}.file-picker input{display:none}.import-preview{margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:12px;display:grid;gap:5px}.import-preview small{color:var(--muted)}
 
 .nav-special{border:1px solid #e1e6ee!important;background:#fff!important;color:#4f5b6e!important}.nav-special:hover{background:#f0f3f7!important;color:#172033!important}.detail-actions{flex-wrap:wrap}
+
+.home-day-title{font-size:clamp(30px,4vw,44px)!important;margin:0!important;text-transform:capitalize}

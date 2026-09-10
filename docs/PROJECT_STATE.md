@@ -74,3 +74,7 @@ Firestore kullanıcı altında: `classes`, `groups`, `schedule`, `documents`, `s
 - Sınıf arşivleme işlemi Sınıf Ayarları üzerinden yapılır.
 - Sınıf oluştururken Eğitim Öğretim Yılı seçilir; geçmiş eğitim öğretim yılları değişmeden korunur ve arşiv mantığı yıl bazlıdır.
 - Gelecek yıl eski sınıfların yeni eğitim öğretim yılına aktarılabilmesi ürün gereksinimidir; eski yıl kaydı değişmemelidir.
+
+- Öğrenci kayıt formu isim-soyisim yanında doğum tarihi, cinsiyet, veli/ikinci veli adı ve telefonları ile adres bilgilerini saklar; toplu aktarımda bu alanlar boş bırakılabilir.
+- Öğrenci, sınıf, grup, ders, belge ve öğrenci geçmişi silmelerinde kullanıcıdan onay alınır; çöp kutusundaki kalıcı silmeler ve çöp kutusunu boşaltma da onay ister.
+- Ana sayfa başlığında gereksiz 'Bugün ne var?' metni kaldırıldı; gün/tarih ana başlık olarak gösterilir ve ders programı aşağıda yer alır.

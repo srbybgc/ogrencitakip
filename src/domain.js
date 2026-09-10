@@ -20,7 +20,7 @@ export function addClass(classes, name, id = crypto.randomUUID()) {
   return sortClasses([...classes, { id, name: clean, students: [] }])
 }
 
-export function addStudent(classes, classId, firstName, lastName = '', id = crypto.randomUUID()) {
+export function addStudent(classes, classId, firstName, lastName = '', id = crypto.randomUUID(), details = {}) {
   const first = firstName.trim()
   const last = lastName.trim()
   if (!first) throw new Error('Öğrenci adı boş bırakılamaz.')
@@ -31,7 +31,7 @@ export function addStudent(classes, classId, firstName, lastName = '', id = cryp
     const students = Array.isArray(c.students) ? c.students : []
     const duplicate = students.some(s => `${s.firstName} ${s.lastName}`.trim().toLocaleLowerCase('tr') === `${first} ${last}`.trim().toLocaleLowerCase('tr'))
     if (duplicate) throw new Error('Bu öğrenci bu sınıfta zaten mevcut.')
-    return { ...c, students: sortStudents([...students, { id, firstName: first, lastName: last }]) }
+    return { ...c, students: sortStudents([...students, { id, firstName: first, lastName: last, birthDate: details.birthDate || '', gender: details.gender || '', parentName: details.parentName || '', parentPhone: details.parentPhone || '', secondParentName: details.secondParentName || '', secondParentPhone: details.secondParentPhone || '', address: details.address || '' }]) }
   })
   if (!found) throw new Error('Sınıf bulunamadı.')
   return sortClasses(result)
