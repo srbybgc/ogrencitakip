@@ -78,11 +78,11 @@ export function removeClassReferences(classes, groups, schedule, documents, clas
 }
 
 export function removeStudentReferences(documents, studentId) {
-  const removedDocuments = documents.filter(d => d.targetType === 'student' && d.targetId === studentId)
-  return {
-    documents: documents.filter(d => !(d.targetType === 'student' && d.targetId === studentId)),
-    removedDocuments,
-  }
+  return documents.filter(d => !(d.targetType === 'student' && d.targetId === studentId))
+}
+
+export function documentsForStudentRemoval(documents, studentId) {
+  return documents.filter(d => d.targetType === 'student' && d.targetId === studentId)
 }
 
 export function checkIntegrity(classes, groups, schedule, documents) {
