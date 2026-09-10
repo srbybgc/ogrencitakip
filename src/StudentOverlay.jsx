@@ -26,6 +26,8 @@ export default function StudentOverlay() {
   const [text, setText] = useState('')
   const [date, setDate] = useState(dateKey())
   const [error, setError] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [edit, setEdit] = useState({})
 
   useEffect(() => {
     const onClick = event => {
@@ -47,6 +49,8 @@ export default function StudentOverlay() {
         setText('')
         setDate(dateKey())
         setError('')
+        setEditing(false)
+        setEdit({ ...found })
       }
     }
     document.addEventListener('click', onClick)
@@ -117,8 +121,19 @@ export default function StudentOverlay() {
       {error && <div className="auth-error" style={{ marginBottom: 12 }}>{error}</div>}
 
       <section className="card" style={styles.card}>
-        <div className="section-title">Öğrenci Bilgileri</div>
-        <div style={styles.infoGrid}>
+        <div className="section-head"><div className="section-title">Öğrenci Bilgileri</div><button className="secondary small" onClick={()=>{setEditing(v=>!v);setEdit({...student})}}>{editing?'Vazgeç':'Düzenle'}</button></div>
+        {editing ? <div className="form-grid" style={{marginTop:12}}>
+          <label className="field"><span>Ad</span><input value={edit.firstName||''} onChange={e=>setEdit(v=>({...v,firstName:e.target.value}))}/></label>
+          <label className="field"><span>Soyad</span><input value={edit.lastName||''} onChange={e=>setEdit(v=>({...v,lastName:e.target.value}))}/></label>
+          <label className="field"><span>Doğum tarihi</span><input type="date" value={edit.birthDate||''} onChange={e=>setEdit(v=>({...v,birthDate:e.target.value}))}/></label>
+          <label className="field"><span>Cinsiyet</span><select value={edit.gender||''} onChange={e=>setEdit(v=>({...v,gender:e.target.value}))}><option value="">Belirtilmedi</option><option>Kız</option><option>Erkek</option></select></label>
+          <label className="field"><span>Veli adı soyadı</span><input value={edit.parentName||''} onChange={e=>setEdit(v=>({...v,parentName:e.target.value}))}/></label>
+          <label className="field"><span>Veli telefonu</span><input type="tel" value={edit.parentPhone||''} onChange={e=>setEdit(v=>({...v,parentPhone:e.target.value}))}/></label>
+          <label className="field"><span>İkinci veli adı soyadı</span><input value={edit.secondParentName||''} onChange={e=>setEdit(v=>({...v,secondParentName:e.target.value}))}/></label>
+          <label className="field"><span>İkinci veli telefonu</span><input type="tel" value={edit.secondParentPhone||''} onChange={e=>setEdit(v=>({...v,secondParentPhone:e.target.value}))}/></label>
+          <label className="field" style={{gridColumn:'1 / -1'}}><span>Adres</span><textarea value={edit.address||''} onChange={e=>setEdit(v=>({...v,address:e.target.value}))}/></label>
+          <button className="primary" onClick={()=>{if(!edit.firstName?.trim()){setError('Öğrenci adı boş bırakılamaz.');return}const classes=read('ot-classes');const next=classes.map(c=>({...c,students:(c.students||[]).map(x=>x.id===student.id?{...x,...edit,firstName:edit.firstName.trim(),lastName:(edit.lastName||'').trim()}:x)}));write('ot-classes',next);location.reload()}}>Bilgileri Kaydet</button>
+        </div> : <div style={styles.infoGrid}>
           <div><small>Doğum tarihi</small><b>{student.birthDate ? dateLabel(student.birthDate) : 'Belirtilmedi'}</b></div>
           <div><small>Cinsiyet</small><b>{student.gender || 'Belirtilmedi'}</b></div>
           <div><small>Veli</small><b>{student.parentName || 'Belirtilmedi'}</b></div>
@@ -126,7 +141,7 @@ export default function StudentOverlay() {
           <div><small>İkinci veli</small><b>{student.secondParentName || 'Belirtilmedi'}</b></div>
           <div><small>İkinci veli telefonu</small><b>{student.secondParentPhone || 'Belirtilmedi'}</b></div>
           <div style={{gridColumn:'1 / -1'}}><small>Adres</small><b>{student.address || 'Belirtilmedi'}</b></div>
-        </div>
+        </div>}
       </section>
 
       <div style={styles.grid}>
