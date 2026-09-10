@@ -42,7 +42,8 @@ export default function App() {
 
   const dayLessons = useMemo(() => schedule.filter(x => x.day === activeDay).sort((a, b) => mins(a.start) - mins(b.start)), [schedule, activeDay])
   const currentLesson = dayLessons.find(isNow)
-  const visibleClasses = classes.filter(c => c.name.toLocaleLowerCase('tr').includes(search.toLocaleLowerCase('tr')))
+  const activeClasses = classes.filter(c => !c.archivedAt)
+  const visibleClasses = activeClasses.filter(c => c.name.toLocaleLowerCase('tr').includes(search.toLocaleLowerCase('tr')))
 
   const goClass = (id) => { setError(''); setSelectedClass(id); setView('class') }
   const addClass = (name) => {
@@ -77,12 +78,12 @@ export default function App() {
       <button className="icon-btn mobile-menu" onClick={() => setModal('menu')}><Menu size={20} /></button>
     </header>
     {error && <div className="content"><Notice message={error} /></div>}
-    {view === 'home' && <Home classes={classes} groups={groups} dayLessons={dayLessons} currentLesson={currentLesson} activeDay={activeDay} setActiveDay={setActiveDay} onClass={goClass} onSchedule={() => setView('schedule')} onDocuments={() => setView('documents')} onAdd={() => { setError(''); setModal('new') }} />}
+    {view === 'home' && <Home classes={activeClasses} groups={groups} dayLessons={dayLessons} currentLesson={currentLesson} activeDay={activeDay} setActiveDay={setActiveDay} onClass={goClass} onSchedule={() => setView('schedule')} onDocuments={() => setView('documents')} onAdd={() => { setError(''); setModal('new') }} />}
     {view === 'classes' && <Classes classes={visibleClasses} search={search} setSearch={setSearch} onClass={goClass} onAdd={() => setModal('class')} />}
     {view === 'class' && <ClassDetail cls={classes.find(c => c.id === selectedClass)} schedule={schedule} onBack={() => setView('classes')} onAddStudent={() => setModal('student')} onDeleteStudent={deleteStudent} onDeleteClass={deleteClass} documents={documents} onDocument={() => setView('documents')} onImportStudents={() => setModal('import-students')} />}
-    {view === 'groups' && <Groups classes={classes} groups={groups} setGroups={setGroups} setError={setError} />}
-    {view === 'schedule' && <Schedule classes={classes} schedule={schedule} setSchedule={setSchedule} setError={setError} />}
-    {view === 'documents' && <Documents classes={classes} groups={groups} documents={documents} setDocuments={setDocuments} />}
+    {view === 'groups' && <Groups classes={activeClasses} groups={groups} setGroups={setGroups} setError={setError} />}
+    {view === 'schedule' && <Schedule classes={activeClasses} schedule={schedule} setSchedule={setSchedule} setError={setError} />}
+    {view === 'documents' && <Documents classes={activeClasses} groups={groups} documents={documents} setDocuments={setDocuments} />}
     {modal === 'class' && <ClassModal onClose={() => setModal(null)} onSave={addClass} />}
     {modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}
     {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}
@@ -153,6 +154,5 @@ function StudentImportModal({onClose,onImport}) {
   const readFile=async f=>{setFile(f);setRows([]);setError('');setLoading(true);try{const n=f.name.toLocaleLowerCase('tr');if(n.endsWith('.txt')||n.endsWith('.csv')){setRows(parseText(await f.text()));return}const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),norm=x=>String(x??'').trim().toLocaleLowerCase('tr'),out=[];for(const item of raw){const e=Object.entries(item).map(([k,v])=>[norm(k),String(v??'').trim()]),pick=names=>e.find(([k])=>names.includes(k))?.[1]||'';let first=pick(['ad','adı','isim','first name','firstname']),last=pick(['soyad','soyadı','last name','lastname']);if(!first){const full=pick(['ad soyad','adı soyadı','isim soyisim','öğrenci','ogrenci']);if(full){const p=full.split(' ').filter(Boolean);first=p.shift()||'';last=p.join(' ')}}if(first)out.push({firstName:first,lastName:last})}if(!out.length)throw new Error('Dosyada öğrenci adı bulunamadı.');setRows(out)}catch(e){setError(e instanceof Error?e.message:'Dosya okunamadı.')}finally{setLoading(false)}}
   return <Modal title="Toplu Öğrenci Aktar" onClose={onClose} wide><p className="muted">XLS/XLSX, CSV veya TXT seç. Excel/CSV için Ad-Soyad sütunları veya tam ad; TXT için her satıra bir öğrenci.</p><label className="file-picker"><Upload size={18}/><span>{file?file.name:'Dosya seç'}</span><input type="file" accept=".xlsx,.xls,.csv,.txt,text/plain,text/csv" onChange={e=>e.target.files?.[0]&&readFile(e.target.files[0])}/></label>{loading&&<div className="empty">Dosya okunuyor…</div>}{error&&<Notice message={error}/>} {!loading&&!error&&rows.length>0&&<div className="import-preview"><b>{rows.length} öğrenci bulundu</b>{rows.slice(0,10).map((r,i)=><div key={i}>{r.firstName} {r.lastName}</div>)}</div>}<div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Vazgeç</button><button type="button" className="primary" disabled={!rows.length||loading} onClick={()=>onImport(rows)}>Aktar</button></div></Modal>
 }
-
 function StudentModal({onClose,onSave}){const [first,setFirst]=useState('');const [last,setLast]=useState('');return <Modal title="Öğrenci Ekle" onClose={onClose}><form onSubmit={e=>{e.preventDefault();onSave(first,last)}}><Field label="Ad"><input autoFocus value={first} onChange={e=>setFirst(e.target.value)} /></Field><Field label="Soyad"><input value={last} onChange={e=>setLast(e.target.value)} /></Field><div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Vazgeç</button><button className="primary">Ekle</button></div></form></Modal>}
 function QuickModal({onClose,onClass,onSchedule,onDocument}){return <Modal title="Yeni kayıt" onClose={onClose}><div className="quick-menu"><button onClick={onClass}><Users size={19}/> Sınıf oluştur<ChevronRight size={17}/></button><button onClick={onSchedule}><Clock3 size={19}/> Ders ekle<ChevronRight size={17}/></button><button onClick={onDocument}><FileText size={19}/> Belge yükle<ChevronRight size={17}/></button></div></Modal>}
