@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { addClass, addLesson, addStudent, attachDocument, checkIntegrity, createGroup, deleteDocument, deleteGroup, deleteLesson, deleteStudent, removeClassReferences, removeStudentReferences } from '../src/domain.js'
+import { addStudentRecord, checkStudentRecordIntegrity, removeClassStudentRecords, removeStudentRecords } from '../src/studentRecords.js'
 
 const ids = { classId: 'c1', studentId: 's1', groupId: 'g1', lessonId: 'l1', docId: 'd1' }
 
@@ -43,6 +44,18 @@ test('öğrenci silme ve öğrenci belgelerini temizleme', () => {
   assert.equal(deleteStudent(classes, ids.classId, ids.studentId)[0].students.length, 0)
   const docs = [{ id: 'student-doc', targetType: 'student', targetId: ids.studentId }, { id: 'class-doc', targetType: 'class', targetId: ids.classId }]
   assert.deepEqual(removeStudentReferences(docs, ids.studentId).map(d => d.id), ['class-doc'])
+})
+
+test('öğrenci takip kaydı ve bütünlük kontrolü', () => {
+  const classes = [{ id: ids.classId, name: '3-A', students: [{ id: ids.studentId, firstName: 'Zeynep', lastName: 'Kaya' }] }]
+  let records = addStudentRecord([], { studentId: ids.studentId, type: 'note', text: 'Veli ile görüşüldü.' }, 'r1')
+  assert.throws(() => addStudentRecord(records, { studentId: ids.studentId, type: 'note', text: 'Tekrar' }, 'r1'), /zaten mevcut/)
+  records = [...records, { id: 'orphan', studentId: 'deleted', type: 'note', text: 'Yetim' }]
+  const checked = checkStudentRecordIntegrity(classes, records)
+  assert.equal(checked.ok, false)
+  assert.deepEqual(checked.records.map(x => x.id), ['r1'])
+  assert.deepEqual(removeStudentRecords(records, ids.studentId).map(x => x.id), ['orphan'])
+  assert.equal(removeClassStudentRecords(records, [ids.studentId]).length, 1)
 })
 
 test('sınıf silinince ilişkili kayıtlar temizleniyor', () => {
