@@ -64,19 +64,25 @@ export function deleteDocument(documents, documentId) {
 export function removeClassReferences(classes, groups, schedule, documents, classId) {
   const targetClass = classes.find(c => c.id === classId)
   const studentIds = new Set((targetClass?.students || []).map(student => student.id))
+  const removedDocuments = documents.filter(d => (
+    (d.targetType === 'class' && d.targetId === classId) ||
+    (d.targetType === 'student' && studentIds.has(d.targetId))
+  ))
   return {
     classes: classes.filter(c => c.id !== classId),
     groups: groups.map(g => ({ ...g, classIds: (g.classIds || []).filter(id => id !== classId) })).filter(g => g.classIds.length > 0),
     schedule: schedule.filter(s => s.classId !== classId),
-    documents: documents.filter(d => !(
-      (d.targetType === 'class' && d.targetId === classId) ||
-      (d.targetType === 'student' && studentIds.has(d.targetId))
-    )),
+    documents: documents.filter(d => !removedDocuments.some(removed => removed.id === d.id)),
+    removedDocuments,
   }
 }
 
 export function removeStudentReferences(documents, studentId) {
-  return documents.filter(d => !(d.targetType === 'student' && d.targetId === studentId))
+  const removedDocuments = documents.filter(d => d.targetType === 'student' && d.targetId === studentId)
+  return {
+    documents: documents.filter(d => !(d.targetType === 'student' && d.targetId === studentId)),
+    removedDocuments,
+  }
 }
 
 export function checkIntegrity(classes, groups, schedule, documents) {
