@@ -38,7 +38,18 @@ export async function startFirestoreSync(uid) {
 
   const originalSetItem = window.localStorage.setItem.bind(window.localStorage)
   const originalRemoveItem = window.localStorage.removeItem.bind(window.localStorage)
+  const queues = new Map()
   let stopped = false
+
+  const enqueue = (name, items) => {
+    const previous = queues.get(name) || Promise.resolve()
+    const next = previous
+      .catch(() => {})
+      .then(() => saveUserCollection(uid, name, items))
+      .catch(error => console.error(`Firestore ${name} senkronizasyonu başarısız:`, error))
+    queues.set(name, next)
+    return next
+  }
 
   try {
     const remote = await loadUserData(uid)
@@ -63,7 +74,7 @@ export async function startFirestoreSync(uid) {
     if (!name || stopped) return
     try {
       const items = JSON.parse(value)
-      if (Array.isArray(items)) saveUserCollection(uid, name, items).catch(console.error)
+      if (Array.isArray(items)) enqueue(name, items)
     } catch (error) {
       console.error('Firestore senkronizasyonu başarısız:', error)
     }
@@ -73,7 +84,7 @@ export async function startFirestoreSync(uid) {
     originalRemoveItem(key)
     const name = KEY_TO_COLLECTION[key]
     if (!name || stopped) return
-    saveUserCollection(uid, name, []).catch(console.error)
+    enqueue(name, [])
   }
 
   return () => {
