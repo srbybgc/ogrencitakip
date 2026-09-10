@@ -1,9 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { addStudentRecord, checkStudentRecordIntegrity, deleteStudentRecord, removeStudentRecords } from '../src/studentRecords.js'
+import { addStudentRecord, ATTENDANCE_STATUSES, checkStudentRecordIntegrity, deleteStudentRecord, removeStudentRecords } from '../src/studentRecords.js'
 
 test('öğrenci notu eklenir ve silinir', () => {
-  const record = { studentId: 's1', type: 'note', text: 'Veli ile görüşüldü.' }
+  const record = { studentId: 's1', type: 'note', text: 'Veli ile görüşüldü.', date: '2026-09-10' }
   let records = addStudentRecord([], record, 'r1')
   assert.equal(records[0].text, record.text)
   records = deleteStudentRecord(records, 'r1')
@@ -18,18 +18,21 @@ test('yoklama ve olay kayıtları kabul edilir', () => {
 })
 
 test('geçersiz yoklama durumu reddedilir', () => {
-  assert.throws(
-    () => addStudentRecord([], { studentId: 's1', type: 'attendance', text: 'Bilinmiyor', status: 'Bilinmiyor' }, 'r1'),
-    /Geçersiz yoklama durumu/,
-  )
+  assert.throws(() => addStudentRecord([], { studentId: 's1', type: 'attendance', text: 'Belirsiz', status: 'Belirsiz', date: '2026-09-10' }, 'r1'), /Geçersiz yoklama/)
+  assert.deepEqual(ATTENDANCE_STATUSES, ['Geldi', 'Gelmedi', 'İzinli'])
+})
+
+test('tarihsiz kayıt reddedilir', () => {
+  assert.throws(() => addStudentRecord([], { studentId: 's1', type: 'note', text: 'Not' }, 'r1'), /tarih/)
 })
 
 test('öğrenci kayıtları doğrulanır', () => {
   const classes = [{ id: 'c1', students: [{ id: 's1', firstName: 'Ada', lastName: 'Kaya' }] }]
   const records = [
-    { id: 'r1', studentId: 's1', type: 'note', text: 'Not' },
-    { id: 'r2', studentId: 'deleted', type: 'note', text: 'Yetim' },
-    { id: 'r3', studentId: 's1', type: 'unknown', text: 'Geçersiz' },
+    { id: 'r1', studentId: 's1', type: 'note', text: 'Not', date: '2026-09-10' },
+    { id: 'r2', studentId: 'deleted', type: 'note', text: 'Yetim', date: '2026-09-10' },
+    { id: 'r3', studentId: 's1', type: 'unknown', text: 'Geçersiz', date: '2026-09-10' },
+    { id: 'r4', studentId: 's1', type: 'attendance', text: 'Belirsiz', status: 'Belirsiz', date: '2026-09-10' },
   ]
   const result = checkStudentRecordIntegrity(classes, records)
   assert.equal(result.ok, false)
@@ -38,8 +41,8 @@ test('öğrenci kayıtları doğrulanır', () => {
 
 test('öğrenci silinince kayıtları temizlenebilir', () => {
   const records = [
-    { id: 'r1', studentId: 's1', type: 'note', text: 'Not' },
-    { id: 'r2', studentId: 's2', type: 'note', text: 'Not' },
+    { id: 'r1', studentId: 's1', type: 'note', text: 'Not', date: '2026-09-10' },
+    { id: 'r2', studentId: 's2', type: 'note', text: 'Not', date: '2026-09-10' },
   ]
   assert.deepEqual(removeStudentRecords(records, 's1').map(x => x.id), ['r2'])
 })
