@@ -1,0 +1,60 @@
+name: Apply final live app fix
+on:
+  push:
+    paths: ['.github/workflows/app-fix3.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install xlsx --save
+      - name: Patch application
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/App.jsx'); s=p.read_text()
+          if "import * as XLSX from 'xlsx'" not in s:
+            s=s.replace("import { useEffect, useMemo, useState } from 'react'", "import { useEffect, useMemo, useState } from 'react'\nimport * as XLSX from 'xlsx'", 1)
+          start=s.index('  const addClass = (name) => {')
+          end=s.index('  const deleteStudent = (sid) => {')
+          handlers='''  const addClass = (name) => {\n    try {\n      const id = uid()\n      const next = addClassDomain(classes, name, id)\n      setClasses(next)\n      setModal(null)\n      goClass(id)\n    } catch (e) { setError(errorText(e)) }\n  }\n  const addStudent = (firstName, lastName) => {\n    if (selectedClass == null) return\n    try {\n      const next = addStudentDomain(classes, selectedClass, firstName, lastName, uid())\n      setClasses(next)\n      setModal(null)\n      setError('')\n    } catch (e) { setError(errorText(e)) }\n  }\n  const importStudents = (rows) => {\n    if (selectedClass == null) return\n    let next = classes, added = 0, skipped = 0\n    rows.forEach(row => {\n      try { next = addStudentDomain(next, selectedClass, row.firstName, row.lastName, uid()); added += 1 } catch { skipped += 1 }\n    })\n    setClasses(next)\n    setModal(null)\n    setError(skipped ? `${added} öğrenci aktarıldı, ${skipped} satır atlandı (boş/tekrar).` : `${added} öğrenci aktarıldı.`)\n  }\n'''
+          s=s[:start]+handlers+s[end:]
+          if 'onImportStudents={() => setModal(\'import-students\')}' not in s:
+            s=s.replace("onDocument={() => setView('documents')} />}", "onDocument={() => setView('documents')} onImportStudents={() => setModal('import-students')} />}", 1)
+          if "modal === 'import-students'" not in s:
+            s=s.replace("    {modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}", "    {modal === 'student' && <StudentModal onClose={() => setModal(null)} onSave={addStudent} />}\n    {modal === 'import-students' && <StudentImportModal onClose={() => setModal(null)} onImport={importStudents} />}", 1)
+          s=s.replace("function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument }) {", "function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument, onImportStudents }) {", 1)
+          if 'className="detail-actions"' not in s:
+            s=s.replace('<button className="primary small" onClick={onAddStudent}><Plus size={16}/> Öğrenci Ekle</button>', '<div className="detail-actions"><button className="secondary small" onClick={onImportStudents}><Upload size={16}/> Excel Aktar</button><button className="primary small" onClick={onAddStudent}><Plus size={16}/> Öğrenci Ekle</button></div>', 1)
+          if 'function StudentImportModal' not in s:
+            marker='function StudentModal({onClose,onSave})'
+            component=r'''function StudentImportModal({onClose,onImport){\n  const [file,setFile]=useState(null),[rows,setRows]=useState([]),[error,setError]=useState(''),[loading,setLoading]=useState(false)\n  const readFile=async f=>{setFile(f);setRows([]);setError('');setLoading(true);try{const data=await f.arrayBuffer();const wb=XLSX.read(data,{type:'array'});const sheet=wb.Sheets[wb.SheetNames[0]];const raw=XLSX.utils.sheet_to_json(sheet,{defval:''});const out=raw.map(item=>{const entries=Object.entries(item).map(([k,v])=>[String(k).trim().toLocaleLowerCase('tr'),String(v??'').trim()]);const exact=names=>{const h=entries.find(([k])=>names.includes(k));return h?.[1]||''};let first=exact(['ad','adı','isim','first name','firstname']);let last=exact(['soyad','soyadı','last name','lastname']);if(!first){const full=exact(['ad soyad','adı soyadı','isim soyisim','öğrenci','ogrenci']);if(full){const parts=full.split(' ').filter(Boolean);first=parts.shift()||'';last=parts.join(' ')}}return {firstName:first,lastName:last}}).filter(x=>x.firstName);if(!out.length)throw new Error('Excel dosyasında Ad / Soyad bilgisi bulunamadı.');setRows(out)}catch(e){setError(e instanceof Error?e.message:'Excel dosyası okunamadı.')}finally{setLoading(false)}}\n  return <Modal title="Excel'den Öğrenci Aktar" onClose={onClose} wide><div className="import-box"><p className="muted">İlk sayfadaki <b>Ad</b> ve <b>Soyad</b> sütunları okunur. Tek bir <b>Ad Soyad</b> sütunu da kullanılabilir.</p><label className="file-picker"><Upload size={18}/><span>{file?file.name:'Excel dosyası seç (.xlsx / .xls)'}</span><input type="file" accept=".xlsx,.xls" onChange={e=>e.target.files?.[0]&&readFile(e.target.files[0])}/></label>{loading&&<div className="empty">Dosya okunuyor…</div>}{error&&<Notice message={error}/>} {!loading&&!error&&rows.length>0&&<div className="import-preview"><b>{rows.length} öğrenci bulundu</b>{rows.slice(0,8).map((r,i)=><div key={i}>{r.firstName} {r.lastName}</div>)}{rows.length>8&&<small>+ {rows.length-8} öğrenci daha</small>}</div>}</div><div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Vazgeç</button><button type="button" className="primary" disabled={!rows.length||loading} onClick={()=>onImport(rows)}>Aktar</button></div></Modal>\n}\n\n'''
+            component=component.replace('{onClose,onImport)}','{onClose,onImport})')
+            s=s.replace(marker,component+marker,1)
+          p.write_text(s)
+          PY
+          cat >> src/index.css <<'EOF'
+          .detail-actions{display:flex;gap:8px;align-items:center}
+          .secondary{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer}
+          .secondary.small{padding:8px 11px;font-size:13px}
+          .file-picker{display:flex;align-items:center;gap:10px;border:1px dashed var(--border);border-radius:12px;padding:16px;cursor:pointer}
+          .file-picker input{display:none}
+          .import-preview{margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:12px;display:grid;gap:5px}
+          .import-preview small{color:var(--muted)}
+          EOF
+      - name: Verify and publish
+        run: |
+          npm test
+          npm run build
+          rm -f .github/workflows/app-fix.yml .github/workflows/app-fix2.yml .github/workflows/app-fix3.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json src/App.jsx src/index.css .github/workflows/app-fix.yml .github/workflows/app-fix2.yml .github/workflows/app-fix3.yml
+          git commit -m 'Fix duplicate class errors and add Excel student import'
+          git push
