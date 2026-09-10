@@ -62,11 +62,16 @@ export function deleteDocument(documents, documentId) {
 }
 
 export function removeClassReferences(classes, groups, schedule, documents, classId) {
+  const targetClass = classes.find(c => c.id === classId)
+  const studentIds = new Set((targetClass?.students || []).map(student => student.id))
   return {
     classes: classes.filter(c => c.id !== classId),
     groups: groups.map(g => ({ ...g, classIds: (g.classIds || []).filter(id => id !== classId) })).filter(g => g.classIds.length > 0),
     schedule: schedule.filter(s => s.classId !== classId),
-    documents: documents.filter(d => !(d.targetType === 'class' && d.targetId === classId)),
+    documents: documents.filter(d => !(
+      (d.targetType === 'class' && d.targetId === classId) ||
+      (d.targetType === 'student' && studentIds.has(d.targetId))
+    )),
   }
 }
 
