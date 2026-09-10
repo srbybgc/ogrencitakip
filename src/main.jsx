@@ -2,8 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import AuthGate from './AuthGate'
-import StudentOverlay from './StudentOverlay'
+import StudentOverlayFixed from './StudentOverlayFixed'
 import LifecycleOverlay from './LifecycleOverlay'
+import UXFixes from './UXFixes'
 import './firebase'
 import './styles.css'
 import './pastelTheme.css'
@@ -15,8 +16,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthGate>
       <App />
-      <StudentOverlay />
+      <StudentOverlayFixed />
       <LifecycleOverlay />
+      <UXFixes />
     </AuthGate>
   </React.StrictMode>,
 )
