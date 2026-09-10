@@ -30,7 +30,7 @@ export default function LifecycleOverlay(){
  const archived=read('classes').filter(c=>c.archivedAt),years=Object.entries(archived.reduce((a,c)=>{const y=c.academicYear||'Diğer';(a[y]??=[]).push(c);return a},{})).sort((a,b)=>b[0].localeCompare(a[0],'tr'))
  if(!open)return null
  const mainNav=[['Ana Sayfa',Home],['Sınıflar',LayoutGrid],['Gruplar',Users],['Ders Programı',Clock3],['Belgeler',FileText]]
- return <main className="content lifecycle-page" style={{position:'fixed',inset:0,zIndex:90,overflow:'auto',background:'#f5f7fb',paddingTop:28}}>
+ return <main className="content lifecycle-page" style={{position:'relative',zIndex:1,minHeight:'calc(100vh - 84px)',background:'#f5f7fb',paddingTop:28}}>
   <div style={{maxWidth:1180,margin:'0 auto',padding:'0 24px 40px'}}>
    <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:18}}>{mainNav.map(([label,Icon])=><button key={label} className="secondary small" onClick={()=>{setOpen(null);setTimeout(()=>goMainView(label),0)}}><Icon size={15}/>{label}</button>)}<button className="secondary small" onClick={()=>setOpen('a')}><Archive size={15}/>Arşiv</button><button className="secondary small" onClick={()=>setOpen('t')}><Trash2 size={15}/>Çöp Kutusu</button></div>
    <button className="back-btn" onClick={()=>{setOpen(null);setTimeout(()=>goMainView('Ana Sayfa'),0)}}><ChevronLeft size={18}/> Ana Sayfa</button>
