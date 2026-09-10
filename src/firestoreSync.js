@@ -1,4 +1,5 @@
 import { loadUserData, saveUserCollection } from './firestoreData'
+import { createSerializedQueue } from './serializedQueue'
 
 const KEY_TO_COLLECTION = {
   'ot-classes': 'classes',
@@ -38,18 +39,11 @@ export async function startFirestoreSync(uid) {
 
   const originalSetItem = window.localStorage.setItem.bind(window.localStorage)
   const originalRemoveItem = window.localStorage.removeItem.bind(window.localStorage)
-  const queues = new Map()
   let stopped = false
-
-  const enqueue = (name, items) => {
-    const previous = queues.get(name) || Promise.resolve()
-    const next = previous
-      .catch(() => {})
-      .then(() => saveUserCollection(uid, name, items))
-      .catch(error => console.error(`Firestore ${name} senkronizasyonu başarısız:`, error))
-    queues.set(name, next)
-    return next
-  }
+  const enqueue = createSerializedQueue(async (name, items) => {
+    if (stopped) return
+    await saveUserCollection(uid, name, items)
+  })
 
   try {
     const remote = await loadUserData(uid)
@@ -74,7 +68,9 @@ export async function startFirestoreSync(uid) {
     if (!name || stopped) return
     try {
       const items = JSON.parse(value)
-      if (Array.isArray(items)) enqueue(name, items)
+      if (Array.isArray(items)) {
+        enqueue(name, items).catch(error => console.error(`Firestore ${name} senkronizasyonu başarısız:`, error))
+      }
     } catch (error) {
       console.error('Firestore senkronizasyonu başarısız:', error)
     }
@@ -84,7 +80,7 @@ export async function startFirestoreSync(uid) {
     originalRemoveItem(key)
     const name = KEY_TO_COLLECTION[key]
     if (!name || stopped) return
-    enqueue(name, [])
+    enqueue(name, []).catch(error => console.error(`Firestore ${name} senkronizasyonu başarısız:`, error))
   }
 
   return () => {
