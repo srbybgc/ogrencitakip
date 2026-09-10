@@ -19,6 +19,7 @@ jobs:
       - name: Apply pending student import patch
         run: |
           npm install xlsx --save
+          node -e "const fs=require('fs');const p='scripts/apply-student-import.mjs';let s=fs.readFileSync(p,'utf8');const a=String.fromCharCode(36);s=s.replaceAll(a+'{added}','\\\\'+a+'{added}').replaceAll(a+'{skipped}','\\\\'+a+'{skipped}');fs.writeFileSync(p,s)"
           node scripts/apply-student-import.mjs
       - name: Test
         run: npm test
