@@ -1,3 +1,4 @@
+# one-shot repository patch
 from pathlib import Path
 
 
@@ -14,11 +15,8 @@ s = replace_once(s, "<div className=\"welcome\"><div><h1 className=\"home-day-ti
 s = replace_once(s, "const orderedClasses = currentLesson ? [...classes].sort((a,b) => Number(b.id === currentLesson.classId) - Number(a.id === currentLesson.classId)) : classes", "const filteredClasses = classes.filter(c=>{const q=search.toLocaleLowerCase('tr').trim();return !q||c.name.toLocaleLowerCase('tr').includes(q)||(c.students||[]).some(st=>`${st.firstName} ${st.lastName}`.toLocaleLowerCase('tr').includes(q))}); const orderedClasses = currentLesson ? [...filteredClasses].sort((a,b) => Number(b.id === currentLesson.classId) - Number(a.id === currentLesson.classId)) : filteredClasses", 'home class filter')
 s = replace_once(s, "<button className=\"icon-btn\" onClick={onAdd}><Plus size={18}/></button>", "<button className=\"icon-btn\" onClick={onAddClass}><Plus size={18}/></button>", 'class plus')
 s = replace_once(s, "const dayLessons = useMemo(() => schedule.filter(x => x.day === activeDay).sort((a, b) => mins(a.start) - mins(b.start)), [schedule, activeDay])", "const teacherSchedule = useMemo(() => schedule.filter(x => x.scope !== 'classProgram'), [schedule]); const dayLessons = useMemo(() => teacherSchedule.filter(x => x.day === activeDay).sort((a, b) => mins(a.start) - mins(b.start)), [teacherSchedule, activeDay])", 'teacher schedule')
-
-start = s.find('function ClassDetail(')
-end = s.find('\nfunction Groups(', start)
-if start < 0 or end < 0:
-    raise SystemExit('missing ClassDetail')
+start = s.find('function ClassDetail('); end = s.find('\nfunction Groups(', start)
+if start < 0 or end < 0: raise SystemExit('missing ClassDetail')
 class_detail = '''function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument, onImportStudents, onArchive, setSchedule, setError }) {
   const [programOpen,setProgramOpen]=useState(false),[day,setDay]=useState(0),[form,setForm]=useState({start:'08:40',end:'09:20',lesson:'',isMyLesson:false})
   if(!cls) return null
@@ -30,10 +28,8 @@ class_detail = '''function ClassDetail({ cls, schedule, documents, onBack, onAdd
 }
 '''
 s = s[:start] + class_detail + s[end:]
-start = s.find('function Schedule(')
-end = s.find('\nfunction Documents(', start)
-if start < 0 or end < 0:
-    raise SystemExit('missing Schedule')
+start = s.find('function Schedule('); end = s.find('\nfunction Documents(', start)
+if start < 0 or end < 0: raise SystemExit('missing Schedule')
 schedule = '''function Schedule({ classes, schedule }) { const [day,setDay]=useState(todayIndex()); const items=schedule.filter(x=>x.scope!=='classProgram'&&x.day===day).sort((a,b)=>mins(a.start)-mins(b.start)); return <main className="content"><div className="page-head"><div><p className="eyebrow">Haftalık plan</p><h1>Ders Programı</h1><p className="muted">Burada yalnızca senin gireceğin dersler görünür. Bir sınıfın tam programı sınıf sayfasından yönetilir.</p></div></div><div className="day-strip">{DAYS.map((d,i)=><button key={d} className={day===i?'day-chip active':'day-chip'} onClick={()=>setDay(i)}><span>{d.slice(0,3)}</span><b>{dayDate(i).getDate()}</b></button>)}</div><section className="card"><div className="section-head"><div><div className="section-title"><Clock3 size={18}/> {DAYS[day]}</div><p className="muted">{items.length} ders</p></div></div><div className="schedule-manage">{items.map(x=><div key={x.id}><span><b>{x.start}–{x.end}</b><small>{x.lesson} · {classes.find(c=>c.id===x.classId)?.name || 'Silinmiş sınıf'}</small></span></div>)}{!items.length&&<div className="empty">Bu güne henüz sana ait ders eklenmemiş. Sınıfın tam programından kendi dersini işaretleyebilirsin.</div>}</div></section></main> }
 '''
 s = s[:start] + schedule + s[end:]
@@ -42,8 +38,7 @@ s = s.replace("<button onClick={onSchedule}><Clock3 size={19}/> Ders ekle<Chevro
 p.write_text(s)
 
 p=Path('src/StudentOverlay.jsx'); s=p.read_text()
-if "const [starred, setStarred]" not in s:
-    s=s.replace("  const [recordType, setRecordType] = useState('note')\n", "  const [starred, setStarred] = useState(false)\n")
+if "const [starred, setStarred]" not in s: s=s.replace("  const [recordType, setRecordType] = useState('note')\n", "  const [starred, setStarred] = useState(false)\n")
 s=s.replace("        setRecordType('note')\n", "        setStarred(false)\n")
 a=s.find("  const addRecord = () => {"); b=s.find("\n  return <div", a)
 if a<0 or b<0: raise SystemExit('missing StudentOverlay addRecord')
