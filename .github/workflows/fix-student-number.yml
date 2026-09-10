@@ -1,0 +1,38 @@
+name: Fix student import
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch student import
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/App.jsx')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('classId:cls...', 'classId:cls.id')
+          s = s.replace("{ studentNumber: row.studentNumber, parentPhone: row.parentPhone }", "{ studentNumber: row.studentNumber, parentPhone: row.parentPhone, secondParentPhone: row.fatherPhone }")
+          s = s.replace("parentPhone:get(['anne','anne telefonu','anne numarası','anne numarasi','mother phone'])", "parentPhone:get(['anne','anne telefonu','anne numarası','anne numarasi','mother phone']),fatherPhone:get(['baba','baba telefonu','baba numarası','baba numarasi','father phone'])")
+          s = s.replace("parentPhone:pick(['anne','anne telefonu','anne numarası','anne numarasi','mother phone'])", "parentPhone:pick(['anne','anne telefonu','anne numarası','anne numarasi','mother phone']),fatherPhone:pick(['baba','baba telefonu','baba numarası','baba numarasi','father phone'])")
+          s = s.replace("lastName:v.slice(2).join(' '),parentPhone:''", "lastName:v[2]||'',parentPhone:v[3]||'',fatherPhone:v[4]||''")
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/App.jsx
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: complete student number and parent phone import'
+          git push
+      - name: Remove one-shot workflow
+        if: success()
+        run: |
+          git rm .github/workflows/fix-student-number.yml
+          git commit -m 'chore: remove one-shot student import fixer'
+          git push
