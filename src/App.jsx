@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx'
 import ArchivePage from './ArchivePage'
 import TrashPage from './TrashPage'
 import ClassSchedulePage from './ClassSchedulePage'
+import ReferenceDashboard from './ReferenceDashboard'
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { ChevronLeft, ChevronRight, Clock3, FileText, FolderOpen, LayoutGrid, Menu, Plus, Search, Trash2, Upload, Users, X } from 'lucide-react'
 import { auth, storage } from './firebase'
@@ -98,7 +99,7 @@ export default function App() {
       <button className="icon-btn mobile-menu" onClick={() => setModal('menu')}><Menu size={20} /></button>
     </header>
     {error && <div className="content"><Notice message={error} /></div>}
-    {view === 'home' && <Home classes={activeClasses} groups={groups} dayLessons={dayLessons} currentLesson={currentLesson} activeDay={activeDay} setActiveDay={setActiveDay} onClass={goClass} onSchedule={() => setView('schedule')} onAdd={() => { setError(''); setModal('new') }} onAddClass={() => { setError(''); setModal('class') }} search={search} setSearch={setSearch} />}
+    {view === 'home' && <ReferenceDashboard classes={activeClasses} schedule={schedule} documents={documents} search={search} setSearch={setSearch} onClass={goClass} onClasses={() => setView('classes')} onSchedule={() => setView('schedule')} onAddClass={() => { setError(''); setModal('class') }} onNewStudent={() => setView('classes')} onDocument={() => setView('documents')} />}
     {view === 'classes' && <Classes classes={visibleClasses} search={search} setSearch={setSearch} onClass={goClass} onAdd={() => setModal('class')} />}
     {view === 'class-schedule' && <ClassSchedulePage cls={classes.find(c => c.id === selectedClass)} schedule={schedule} setSchedule={setSchedule} setError={setError} onBack={() => setView('class')} />}
     {view === 'class' && <ClassDetail cls={classes.find(c => c.id === selectedClass)} schedule={schedule} setSchedule={setSchedule} setError={setError} onBack={() => setView('classes')} onAddStudent={() => setModal('student')} onDeleteStudent={deleteStudent} onDeleteClass={deleteClass} onArchive={() => { if (selectedClass == null) return; const y = new Date().getFullYear(); setClasses(v => v.map(c => c.id === selectedClass ? { ...c, archivedAt: new Date().toISOString(), academicYear: c.academicYear || `${y}-${y+1}` } : c)); setView('archive') }} documents={documents} onDocument={() => setView('documents')} onImportStudents={() => setModal('import-students')} onProgram={() => setView('class-schedule')} />}
