@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 
+# One-shot migration: search, reports, settings, and class teacher details.
 p=Path('src/App.jsx')
 s=p.read_text()
 
