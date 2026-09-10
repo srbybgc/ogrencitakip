@@ -15,17 +15,8 @@ const mins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m
 const isNow = (item) => { const n = new Date(); return item.day === todayIndex() && mins(n.toTimeString().slice(0, 5)) >= mins(item.start) && mins(n.toTimeString().slice(0, 5)) < mins(item.end) }
 const errorText = (error) => error instanceof Error ? error.message : 'İşlem sırasında bir hata oluştu.'
 
-const initialClasses = [
-  { id: 'c1', name: '1-A', students: [{ id: 's1', firstName: 'Ada', lastName: 'Yılmaz' }, { id: 's2', firstName: 'Efe', lastName: 'Kaya' }] },
-  { id: 'c2', name: '1-B', students: [{ id: 's3', firstName: 'Defne', lastName: 'Demir' }] },
-  { id: 'c3', name: '2-A', students: [{ id: 's4', firstName: 'Aras', lastName: 'Çelik' }] },
-]
-const initialSchedule = [
-  { id: 'l1', day: 0, start: '08:40', end: '09:20', classId: 'c1', lesson: 'Türkçe' },
-  { id: 'l2', day: 0, start: '09:30', end: '10:10', classId: 'c2', lesson: 'Matematik' },
-  { id: 'l3', day: 0, start: '10:20', end: '11:00', classId: 'c3', lesson: 'Hayat Bilgisi' },
-  { id: 'l4', day: 1, start: '09:00', end: '09:40', classId: 'c1', lesson: 'Matematik' },
-]
+const initialClasses = []
+const initialSchedule = []
 
 function Modal({ title, onClose, children, wide = false }) { return <div className="modal-backdrop" onMouseDown={onClose}><div className={`modal ${wide ? 'modal-wide' : ''}`} onMouseDown={e => e.stopPropagation()}><div className="modal-head"><h3>{title}</h3><button className="icon-btn" onClick={onClose}><X size={18} /></button></div>{children}</div></div> }
 function Field({ label, children }) { return <label className="field"><span>{label}</span>{children}</label> }
@@ -54,20 +45,13 @@ export default function App() {
 
   const goClass = (id) => { setError(''); setSelectedClass(id); setView('class') }
   const addClass = (name) => {
-    try {
-      const id = uid()
-      setClasses(v => addClassDomain(v, name, id))
-      setModal(null)
-      goClass(id)
-    } catch (e) { setError(errorText(e)) }
+    try { const id = uid(); setClasses(v => addClassDomain(v, name, id)); setModal(null); goClass(id) }
+    catch (e) { setError(errorText(e)) }
   }
   const addStudent = (firstName, lastName) => {
     if (selectedClass == null) return
-    try {
-      setClasses(v => addStudentDomain(v, selectedClass, firstName, lastName, uid()))
-      setModal(null)
-      setError('')
-    } catch (e) { setError(errorText(e)) }
+    try { setClasses(v => addStudentDomain(v, selectedClass, firstName, lastName, uid())); setModal(null); setError('') }
+    catch (e) { setError(errorText(e)) }
   }
   const deleteStudent = (sid) => {
     setClasses(v => deleteStudentDomain(v, selectedClass, sid))
@@ -111,14 +95,14 @@ function Home({ classes, groups, dayLessons, currentLesson, activeDay, setActive
       <div className="schedule-list">{dayLessons.length ? dayLessons.map(x=><button className={`schedule-row ${isNow(x)?'now':''}`} key={x.id} onClick={()=>onClass(x.classId)}><span className="schedule-time">{x.start}<small>{x.end}</small></span><span className="schedule-class"><b>{classes.find(c=>c.id===x.classId)?.name || 'Silinmiş sınıf'}</b><small>{x.lesson}</small></span><ChevronRight size={17}/></button>) : <div className="empty">Bu gün için henüz ders programı yok.</div>}</div>
     </section>
     <section className="card"><div className="section-head"><div><div className="section-title"><LayoutGrid size={18}/> Sınıflar</div><p className="muted">{classes.length} sınıf · {classes.reduce((a,c)=>a+c.students.length,0)} öğrenci</p></div><button className="icon-btn" onClick={onAdd}><Plus size={18}/></button></div>
-      <div className="class-grid">{orderedClasses.map(c=><button className={currentLesson?.classId===c.id?'class-card priority':'class-card'} key={c.id} onClick={()=>onClass(c.id)}><span className="class-icon"><Users size={19}/></span><span><b>{c.name}</b><small>{c.students.length} öğrenci</small></span><ChevronRight size={17}/></button>)}</div>
+      <div className="class-grid">{orderedClasses.map(c=><button className={currentLesson?.classId===c.id?'class-card priority':'class-card'} key={c.id} onClick={()=>onClass(c.id)}><span className="class-icon"><Users size={19}/></span><span><b>{c.name}</b><small>{c.students.length} öğrenci</small></span><ChevronRight size={17}/></button>)}{!classes.length&&<div className="empty">Henüz sınıf oluşturulmadı.</div>}</div>
     </section>
     <div className="home-actions"><button onClick={onDocuments}><FileText size={20}/><span><b>Belge / Dosya Ekle</b><small>Öğrenci, sınıf veya grupla ilişkilendir</small></span><ChevronRight size={18}/></button><button onClick={onSchedule}><CalendarDays size={20}/><span><b>Ders Programını Yönet</b><small>Haftalık programını düzenle</small></span><ChevronRight size={18}/></button></div>
     {groups.length>0 && <p className="home-note">{groups.length} grup oluşturuldu. Gruplar ana sayfada sınıf kalabalığını artırmadan ayrı tutulur.</p>}
   </main>
 }
 
-function Classes({ classes, search, setSearch, onClass, onAdd }) { return <main className="content"><div className="page-head"><div><p className="eyebrow">Yönetim</p><h1>Sınıflar</h1><p className="muted">Sınıflarını ve öğrencilerini yönet.</p></div><button className="primary" onClick={onAdd}><Plus size={18}/> Sınıf Ekle</button></div><div className="search"><Search size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Sınıf ara…"/></div><div className="large-grid">{classes.map(c=><button className="class-panel" key={c.id} onClick={()=>onClass(c.id)}><div className="panel-icon"><Users size={21}/></div><div><b>{c.name}</b><span>{c.students.length} öğrenci</span></div><ChevronRight size={18}/></button>)}{!classes.length&&<div className="empty">Aramana uygun sınıf bulunamadı.</div>}</div></main> }
+function Classes({ classes, search, setSearch, onClass, onAdd }) { return <main className="content"><div className="page-head"><div><p className="eyebrow">Yönetim</p><h1>Sınıflar</h1><p className="muted">Sınıflarını ve öğrencilerini yönet.</p></div><button className="primary" onClick={onAdd}><Plus size={18}/> Sınıf Ekle</button></div><div className="search"><Search size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Sınıf ara…"/></div><div className="large-grid">{classes.map(c=><button className="class-panel" key={c.id} onClick={()=>onClass(c.id)}><div className="panel-icon"><Users size={21}/></div><div><b>{c.name}</b><span>{c.students.length} öğrenci</span></div><ChevronRight size={18}/></button>)}{!classes.length&&<div className="empty">Henüz sınıf oluşturulmadı.</div>}</div></main> }
 
 function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteStudent, onDeleteClass, onDocument }) {
   if(!cls) return null
@@ -130,7 +114,7 @@ function ClassDetail({ cls, schedule, documents, onBack, onAddStudent, onDeleteS
 
 function Groups({ classes, groups, setGroups, setError }) { const [name,setName]=useState(''); const [selected,setSelected]=useState([]); const add=()=>{try{setGroups(v=>createGroupDomain(v,name,selected,uid()));setName('');setSelected([]);setError('')}catch(e){setError(errorText(e))}}; const remove=(id)=>{setGroups(v=>deleteGroupDomain(v,id));setError('')}; return <main className="content"><div className="page-head"><div><p className="eyebrow">Organizasyon</p><h1>Gruplar</h1><p className="muted">İstersen sınıfları üst gruplar altında toplayabilirsin.</p></div></div><section className="card form-card"><div className="section-title"><FolderOpen size={18}/> Yeni Grup</div><div className="inline-form"><input value={name} onChange={e=>setName(e.target.value)} placeholder="Örn. Sabah Grubu"/><button className="primary" onClick={add}><Plus size={17}/> Oluştur</button></div><div className="check-grid">{classes.map(c=><label key={c.id}><input type="checkbox" checked={selected.includes(c.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}/>{c.name}<small>{c.students.length} öğrenci</small></label>)}</div></section><div className="group-grid">{groups.map(g=><div className="group-card" key={g.id}><div className="panel-icon"><FolderOpen size={20}/></div><div><b>{g.name}</b><span>{(g.classIds||[]).map(id=>classes.find(c=>c.id===id)?.name).filter(Boolean).join(', ')||'Sınıf atanmadı'}</span></div><button className="icon-btn danger" onClick={()=>remove(g.id)}><Trash2 size={16}/></button></div>)}</div></main> }
 
-function Schedule({ classes, schedule, setSchedule, setError }) { const [day,setDay]=useState(todayIndex()); const [form,setForm]=useState({start:'08:40',end:'09:20',classId:classes[0]?.id||'',lesson:''}); const add=()=>{try{setSchedule(v=>addLessonDomain(v,{day,start:form.start,end:form.end,classId:form.classId,lesson:form.lesson},uid()));setForm(v=>({...v,lesson:''}));setError('')}catch(e){setError(errorText(e))}}; const remove=(id)=>{setSchedule(v=>deleteLessonDomain(v,id));setError('')}; return <main className="content"><div className="page-head"><div><p className="eyebrow">Haftalık plan</p><h1>Ders Programı</h1><p className="muted">Bugünkü ders otomatik olarak ana sayfada öne çıkar.</p></div></div><div className="day-strip">{DAYS.map((d,i)=><button key={d} className={day===i?'day-chip active':'day-chip'} onClick={()=>setDay(i)}><span>{d.slice(0,3)}</span><b>{dayDate(i).getDate()}</b></button>)}</div><section className="card form-card"><div className="section-title"><Plus size={18}/> Ders Ekle</div><div className="form-grid"><Field label="Başlangıç"><input type="time" value={form.start} onChange={e=>setForm({...form,start:e.target.value})}/></Field><Field label="Bitiş"><input type="time" value={form.end} onChange={e=>setForm({...form,end:e.target.value})}/></Field><Field label="Sınıf"><select value={form.classId} onChange={e=>setForm({...form,classId:e.target.value})}>{classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></Field><Field label="Ders"><input value={form.lesson} onChange={e=>setForm({...form,lesson:e.target.value})} placeholder="Örn. Türkçe"/></Field><button className="primary" onClick={add}>Ekle</button></div></section><section className="card"><div className="section-head"><div><div className="section-title"><Clock3 size={18}/> {DAYS[day]}</div><p className="muted">{schedule.filter(x=>x.day===day).length} ders</p></div></div><div className="schedule-manage">{schedule.filter(x=>x.day===day).sort((a,b)=>mins(a.start)-mins(b.start)).map(x=><div key={x.id}><span><b>{x.start}–{x.end}</b><small>{x.lesson} · {classes.find(c=>c.id===x.classId)?.name || 'Silinmiş sınıf'}</small></span><button className="icon-btn danger" onClick={()=>remove(x.id)}><Trash2 size={16}/></button></div>)}{!schedule.filter(x=>x.day===day).length&&<div className="empty">Bu güne henüz ders eklenmedi.</div>}</div></section></main> }
+function Schedule({ classes, schedule, setSchedule, setError }) { const [day,setDay]=useState(todayIndex()); const [form,setForm]=useState({start:'08:40',end:'09:20',classId:classes[0]?.id||'',lesson:''}); const add=()=>{try{setSchedule(v=>addLessonDomain(v,{day,start:form.start,end:form.end,classId:form.classId,lesson:form.lesson},uid()));setForm(v=>({...v,lesson:''}));setError('')}catch(e){setError(errorText(e))}}; const remove=(id)=>{setSchedule(v=>deleteLessonDomain(v,id));setError('')}; return <main className="content"><div className="page-head"><div><p className="eyebrow">Haftalık plan</p><h1>Ders Programı</h1><p className="muted">Bugünkü ders otomatik olarak ana sayfada öne çıkar.</p></div></div><div className="day-strip">{DAYS.map((d,i)=><button key={d} className={day===i?'day-chip active':'day-chip'} onClick={()=>setDay(i)}><span>{d.slice(0,3)}</span><b>{dayDate(i).getDate()}</b></button>)}</div><section className="card form-card"><div className="section-title"><Plus size={18}/> Ders Ekle</div><div className="form-grid"><Field label="Başlangıç"><input type="time" value={form.start} onChange={e=>setForm({...form,start:e.target.value})}/></Field><Field label="Bitiş"><input type="time" value={form.end} onChange={e=>setForm({...form,end:e.target.value})}/></Field><Field label="Sınıf"><select value={form.classId} onChange={e=>setForm({...form,classId:e.target.value})}>{classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></Field><Field label="Ders"><input value={form.lesson} onChange={e=>setForm({...form,lesson:e.target.value})} placeholder="Örn. Türkçe"/></Field><button className="primary" onClick={add} disabled={!classes.length}>Ekle</button></div></section><section className="card"><div className="section-head"><div><div className="section-title"><Clock3 size={18}/> {DAYS[day]}</div><p className="muted">{schedule.filter(x=>x.day===day).length} ders</p></div></div><div className="schedule-manage">{schedule.filter(x=>x.day===day).sort((a,b)=>mins(a.start)-mins(b.start)).map(x=><div key={x.id}><span><b>{x.start}–{x.end}</b><small>{x.lesson} · {classes.find(c=>c.id===x.classId)?.name || 'Silinmiş sınıf'}</small></span><button className="icon-btn danger" onClick={()=>remove(x.id)}><Trash2 size={16}/></button></div>)}{!schedule.filter(x=>x.day===day).length&&<div className="empty">Bu güne henüz ders eklenmedi.</div>}</div></section></main> }
 
 function Documents({ classes, groups, documents, setDocuments }) {
   const [targetType,setTargetType]=useState('class')
@@ -141,20 +125,15 @@ function Documents({ classes, groups, documents, setDocuments }) {
   const allStudents=classes.flatMap(c=>c.students.map(s=>({...s,className:c.name})))
   const targetOptions=targetType==='class'?classes:targetType==='group'?groups:allStudents
   const upload=async e=>{
-    const file=e.target.files?.[0]
-    e.target.value=''
+    const file=e.target.files?.[0]; e.target.value=''
     if(!file)return
     if(!user){setError('Belge yüklemek için giriş yapmalısınız.');return}
     if(!targetId){setError('Önce belgenin ilişkilendirileceği kaydı seçin.');return}
     if(file.size>20*1024*1024){setError('Dosya boyutu 20 MB sınırını aşamaz.');return}
     setBusy(true);setError('')
     const id=uid(); const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_'); const path=`users/${user.uid}/documents/${id}-${safeName}`
-    try{
-      await uploadBytes(ref(storage,path),file)
-      const downloadUrl=await getDownloadURL(ref(storage,path))
-      const item={id,name:file.name,size:file.size,type:file.type,targetType,targetId,storagePath:path,downloadUrl,createdAt:new Date().toISOString()}
-      setDocuments(v=>attachDocumentDomain(v,item,id))
-    }catch(err){console.error(err);setError('Dosya yüklenemedi. Firebase Storage bağlantısını kontrol edin.')}finally{setBusy(false)}
+    try{ await uploadBytes(ref(storage,path),file); const downloadUrl=await getDownloadURL(ref(storage,path)); const item={id,name:file.name,size:file.size,type:file.type,targetType,targetId,storagePath:path,downloadUrl,createdAt:new Date().toISOString()}; setDocuments(v=>attachDocumentDomain(v,item,id)) }
+    catch(err){console.error(err);setError('Dosya yüklenemedi. Firebase Storage bağlantısını kontrol edin.')}finally{setBusy(false)}
   }
   const remove=async d=>{try{if(d.storagePath)await deleteObject(ref(storage,d.storagePath))}catch(err){if(err.code!=='storage/object-not-found')console.error(err)}setDocuments(v=>deleteDocumentDomain(v,d.id))}
   const labelFor=d=>{if(d.targetType==='class')return classes.find(c=>c.id===d.targetId)?.name||'Kayıt silinmiş';if(d.targetType==='group')return groups.find(g=>g.id===d.targetId)?.name||'Kayıt silinmiş';const s=allStudents.find(x=>x.id===d.targetId);return s?`${s.firstName} ${s.lastName} · ${s.className}`:'Öğrenci silinmiş'}
