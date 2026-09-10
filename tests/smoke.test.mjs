@@ -25,7 +25,8 @@ test('grup ilişkilendirme ve silme', () => {
 
 test('ders ekleme, çakışma kontrolü ve silme', () => {
   let schedule = addLesson([], { day: 0, start: '09:00', end: '09:40', classId: ids.classId, lesson: 'Türkçe' }, ids.lessonId)
-  assert.doesNotThrow(() => addLesson(schedule, { day: 0, start: '09:20', end: '10:00', classId: 'c2', lesson: 'Matematik' }))
+  schedule = addLesson(schedule, { day: 0, start: '09:20', end: '10:00', classId: 'c2', lesson: 'Matematik' }, 'l2')
+  assert.equal(schedule.length, 2)
   assert.throws(() => addLesson(schedule, { day: 0, start: '09:20', end: '10:00', classId: ids.classId, lesson: 'Matematik' }), /başka bir ders/)
   assert.throws(() => addLesson(schedule, { day: 0, start: '10:00', end: '09:50', classId: 'c2', lesson: 'Matematik' }), /geçersiz/)
   schedule = deleteLesson(schedule, ids.lessonId)
