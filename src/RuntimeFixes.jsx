@@ -18,6 +18,23 @@ const installClassPersistence = () => {
 }
 installClassPersistence()
 
+const installClassSaveGuard = () => {
+  if (window.__otClassSaveGuardInstalled) return
+  window.__otClassSaveGuardInstalled = true
+  const originalSetItem = window.localStorage.setItem.bind(window.localStorage)
+  window.localStorage.setItem = (key, value) => {
+    if (key === 'ot-classes') {
+      try {
+        const incoming = JSON.parse(value)
+        const existing = JSON.parse(window.localStorage.getItem('ot-classes') || '[]')
+        const teacher2 = new Map((Array.isArray(existing) ? existing : []).filter(item => item?.teacher2).map(item => [String(item.id), item.teacher2]))
+        if (Array.isArray(incoming)) value = JSON.stringify(incoming.map(item => teacher2.has(String(item.id)) && !item.teacher2 ? { ...item, teacher2: teacher2.get(String(item.id)) } : item))
+      } catch {}
+    }
+    originalSetItem(key, value)
+  }
+}
+
 const restoreClass = () => {
   const id = sessionStorage.getItem('ot-last-class-id')
   if (!id || document.querySelector('.class-detail-top')) return
@@ -146,11 +163,12 @@ const addSecondTeacher = () => {
 
 export default function RuntimeFixes() {
   useEffect(() => {
+    installClassSaveGuard()
     const onClick = event => {
       const button = event.target.closest('button')
       if (!button) return
       const text = clean(button.textContent)
-      if (['Ana Sayfa', 'Ders Programı', 'Belgeler', 'Raporlar', 'Arşiv', 'Çöp Kutusu', 'Ayarlar'].includes(text)) sessionStorage.removeItem('ot-last-class-id')
+      if (button.classList.contains('brand') || ['Ana Sayfa', 'Ders Programı', 'Belgeler', 'Raporlar', 'Arşiv', 'Çöp Kutusu', 'Ayarlar'].includes(text)) sessionStorage.removeItem('ot-last-class-id')
     }
     document.addEventListener('click', onClick)
     const observer = new MutationObserver(() => addSecondTeacher())
