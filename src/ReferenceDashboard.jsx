@@ -9,13 +9,12 @@ import './dashboardOverrides.css'
 const trDate = d => d.toLocaleDateString('tr-TR',{day:'numeric',month:'long'})
 const trMonth = d => d.toLocaleDateString('tr-TR',{month:'long',year:'numeric'})
 
-export default function ReferenceDashboard({classes=[],schedule=[],documents=[],search='',setSearch=()=>{},onClass=()=>{},onClasses=()=>{},onSchedule=()=>{},onAddClass=()=>{},onNewStudent=()=>{},onDocument=()=>{}}){
+export default function ReferenceDashboard({classes=[],schedule=[],documents=[],onClass=()=>{},onClasses=()=>{},onSchedule=()=>{},onAddClass=()=>{},onNewStudent=()=>{},onDocument=()=>{}}){
   const now=new Date(),user=useAuthUser()
   const [month,setMonth]=useState(new Date(now.getFullYear(),now.getMonth(),1))
   const [profile,setProfile]=useState(()=>{try{return JSON.parse(localStorage.getItem('ot-profile')||'{}')}catch{return {}}})
-  const [searchOpen,setSearchOpen]=useState(false),[selectedStudent,setSelectedStudent]=useState(null)
+  const [search,setSearch]=useState(''),[searchOpen,setSearchOpen]=useState(false),[selectedStudent,setSelectedStudent]=useState(null)
   const lessons=useMemo(()=>schedule.filter(x=>x.scope!=='classProgram'&&x.day===((now.getDay()+6)%7)).sort((a,b)=>String(a.start).localeCompare(String(b.start))).slice(0,3),[schedule])
-  // Arama yalnızca sonuçları etkiler; Sınıflarım kartı arama sırasında kaybolmaz.
   const visible=classes.slice(0,4)
   const first=new Date(month.getFullYear(),month.getMonth(),1),days=new Date(month.getFullYear(),month.getMonth()+1,0).getDate(),lead=(first.getDay()+6)%7
   const cells=Array.from({length:lead+days},(_,i)=>i<lead?null:i-lead+1)
