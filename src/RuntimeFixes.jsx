@@ -22,11 +22,9 @@ const installClassSaveGuard = () => {
         const incoming = JSON.parse(value), existing = JSON.parse(window.localStorage.getItem('ot-classes') || '[]')
         const old = new Map((Array.isArray(existing)?existing:[]).map(item=>[String(item.id),item]))
         if (Array.isArray(incoming)) value = JSON.stringify(incoming.map(item => {
-          const prev=old.get(String(item.id));
-          if (!prev) return item
+          const prev=old.get(String(item.id)); if (!prev) return item
           const next={...item}
           if (prev.teacher2 && !item.teacher2) next.teacher2=prev.teacher2
-          // React state can lag behind the spreadsheet import; never let it erase a repaired birth date.
           const prevStudents=new Map((prev.students||[]).map(s=>[String(s.id),s]))
           next.students=(item.students||[]).map(s=>{const p=prevStudents.get(String(s.id));return p?.birthDate&&!s.birthDate?{...s,birthDate:p.birthDate}:s})
           return next
@@ -47,8 +45,7 @@ const restoreClass = () => {
 
 const addSecondTeacher = () => {
   const card=document.querySelector('.teacher-card');if(!card||card.querySelector('[data-ot-teacher2]'))return
-  const id=sessionStorage.getItem('ot-last-class-id')||window.__otSelectedClass;if(!id)return
-  if(!readClasses().some(item=>String(item.id)===String(id)))return
+  const id=sessionStorage.getItem('ot-last-class-id')||window.__otSelectedClass;if(!id||!readClasses().some(item=>String(item.id)===String(id)))return
   const box=document.createElement('div');box.dataset.otTeacher2='1';box.className='teacher-second';card.appendChild(box)
   const field=(label,name,value='')=>{const f=document.createElement('label');f.className='field';const s=document.createElement('span');s.textContent=label;const i=document.createElement('input');i.name=name;i.value=value;i.placeholder=label;f.append(s,i);return f}
   const render=()=>{const current=readClasses().find(item=>String(item.id)===String(id))?.teacher2;box.innerHTML='';const head=document.createElement('div');head.className='section-head';const h=document.createElement('h3');h.textContent='İkinci Öğretmen';const p=document.createElement('p');p.className='muted';p.textContent='Öğleden sonra gelen branş öğretmeni.';head.append(h,p);box.appendChild(head)
