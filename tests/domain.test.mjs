@@ -34,12 +34,22 @@ test('farklı sınıflar aynı saatte ders yapabilir, aynı sınıf yapamaz', ()
   assert.throws(() => addLesson(schedule, { ...second, lesson: 'Fen' }, 'l3'), /başka bir dersi/)
 })
 
+test('ders saatleri geçersizse veya kısmen çakışıyorsa ekleme reddedilir', () => {
+  const base = { id: 'l1', classId: 'c1', day: 0, lesson: 'Matematik', start: '09:00', end: '10:00' }
+  assert.throws(() => addLesson([], { ...base, start: '10:00', end: '09:00' }, 'bad-1'), /geçersiz/)
+  assert.throws(() => addLesson([], { ...base, start: '09:00', end: '09:00' }, 'bad-2'), /geçersiz/)
+  assert.throws(() => addLesson([base], { ...base, start: '09:30', end: '10:30', id: undefined }, 'bad-3'), /başka bir dersi/)
+  assert.throws(() => addLesson([base], { ...base, start: '08:30', end: '09:15', id: undefined }, 'bad-4'), /başka bir dersi/)
+  assert.doesNotThrow(() => addLesson([base], { ...base, start: '10:00', end: '11:00', id: undefined }, 'ok-1'))
+})
+
 test('sınıf ve öğrenci ekleme tekrarları engeller, öğrenci silme çalışır', () => {
   let classes = addClass([], '  1-A  ', 'c1')
   assert.equal(classes[0].name, '1-A')
   assert.throws(() => addClass(classes, '1-a', 'c2'), /zaten mevcut/)
-  classes = addStudent(classes, 'c1', ' Ada ', ' Kaya ', 's1', { studentNumber: '7', parentPhone: '555' })
+  classes = addStudent(classes, 'c1', ' Ada ', ' Kaya ', 's1', { studentNumber: '7', birthDate: '2019-04-12', parentPhone: '555' })
   assert.equal(classes[0].students[0].studentNumber, '7')
+  assert.equal(classes[0].students[0].birthDate, '2019-04-12')
   assert.throws(() => addStudent(classes, 'c1', 'ada', 'kaya', 's2'), /zaten mevcut/)
   classes = deleteStudent(classes, 'c1', 's1')
   assert.equal(classes[0].students.length, 0)
