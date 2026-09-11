@@ -4,10 +4,12 @@ import App from './App'
 import AuthGate from './AuthGate'
 import StudentOverlayFixed from './StudentOverlayFixed'
 import UXFixes from './UXFixes'
+import RuntimeFixes from './RuntimeFixes'
 import AppErrorBoundary from './AppErrorBoundary'
 import './firebase'
 import './styles.css'
 import './pastelTheme.css'
+import './finalCleanup.css'
 import { repairStoredData } from './integrity'
 
 try {
@@ -27,6 +29,7 @@ ReactDOM.createRoot(root).render(
         <App />
         <StudentOverlayFixed />
         <UXFixes />
+        <RuntimeFixes />
       </AuthGate>
     </AppErrorBoundary>
   </React.StrictMode>,
