@@ -9,7 +9,7 @@ const mins = t => { const [h,m] = t.split(':').map(Number); return h * 60 + m }
 
 export default function ClassSchedulePage({ cls, schedule, setSchedule, setError, onBack }) {
   const [day, setDay] = useState(new Date().getDay() >= 1 && new Date().getDay() <= 5 ? new Date().getDay() - 1 : 0)
-  const [form, setForm] = useState({ start:'08:40', end:'09:20', lesson:'', isMyLesson:false })
+  const [form, setForm] = useState({ start:'08:30', end:'09:30', lesson:'', isMyLesson:false })
   const lessons = useMemo(() => schedule.filter(x => x.classId === cls?.id && x.scope === 'classProgram' && x.day === day).sort((a,b) => mins(a.start) - mins(b.start)), [schedule, cls?.id, day])
   const total = schedule.filter(x => x.classId === cls?.id && x.scope === 'classProgram').length
   if (!cls) return null
