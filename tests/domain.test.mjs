@@ -38,6 +38,9 @@ test('ders saatleri geçersizse veya kısmen çakışıyorsa ekleme reddedilir',
   const base = { id: 'l1', classId: 'c1', day: 0, lesson: 'Matematik', start: '09:00', end: '10:00' }
   assert.throws(() => addLesson([], { ...base, start: '10:00', end: '09:00' }, 'bad-1'), /geçersiz/)
   assert.throws(() => addLesson([], { ...base, start: '09:00', end: '09:00' }, 'bad-2'), /geçersiz/)
+  assert.throws(() => addLesson([], { ...base, start: '9:00', end: '10:00' }, 'bad-5'), /geçersiz/)
+  assert.throws(() => addLesson([], { ...base, start: '09:60', end: '10:00' }, 'bad-6'), /geçersiz/)
+  assert.throws(() => addLesson([], { ...base, start: '24:00', end: '25:00' }, 'bad-7'), /geçersiz/)
   assert.throws(() => addLesson([base], { ...base, start: '09:30', end: '10:30', id: undefined }, 'bad-3'), /başka bir dersi/)
   assert.throws(() => addLesson([base], { ...base, start: '08:30', end: '09:15', id: undefined }, 'bad-4'), /başka bir dersi/)
   assert.doesNotThrow(() => addLesson([base], { ...base, start: '10:00', end: '11:00', id: undefined }, 'ok-1'))
