@@ -78,6 +78,7 @@ export default function TrashPage() {
         if(!a.some(v=>v.id===x.data.id)) write(k,[...a,x.data])
       }
       setTrash(v=>v.filter(v=>v.id!==x.id)); window.dispatchEvent(new Event('ot-data-changed'))
+      window.location.reload()
     } finally { busy.current=false }
   }
 
