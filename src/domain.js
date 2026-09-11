@@ -1,6 +1,7 @@
 export const overlap = (aStart, aEnd, bStart, bEnd) => aStart < bEnd && bStart < aEnd
 
 const compareTr = (a, b) => String(a ?? '').localeCompare(String(b ?? ''), 'tr', { sensitivity: 'base', numeric: true })
+const validTime = value => typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
 
 export function sortStudents(students) {
   return [...(Array.isArray(students) ? students : [])].sort((a, b) => {
@@ -60,7 +61,7 @@ export function deleteGroup(groups, groupId) {
 
 export function addLesson(schedule, lesson, id = crypto.randomUUID()) {
   if (!lesson.classId || !lesson.lesson?.trim()) throw new Error('Sınıf ve ders adı zorunludur.')
-  if (!lesson.start || !lesson.end || lesson.start >= lesson.end) throw new Error('Ders başlangıç ve bitiş saatleri geçersiz.')
+  if (!validTime(lesson.start) || !validTime(lesson.end) || lesson.start >= lesson.end) throw new Error('Ders başlangıç ve bitiş saatleri geçersiz.')
   const clash = schedule.some(s => s.classId === lesson.classId && s.day === lesson.day && overlap(s.start, s.end, lesson.start, lesson.end))
   if (clash) throw new Error('Bu sınıfın bu saat aralığında başka bir dersi bulunuyor.')
   return [...schedule, { ...lesson, id, lesson: lesson.lesson.trim() }]
