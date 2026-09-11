@@ -1,23 +1,4 @@
 import React, { useEffect, useState } from 'react'
 import { Archive, ArchiveRestore } from 'lucide-react'
-
-const KEY = 'ot-classes'
-const read = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : [] } catch { return [] } }
-const write = v => localStorage.setItem(KEY, JSON.stringify(v))
-
-export default function ArchivePage() {
-  const [classes, setClasses] = useState(read)
-  useEffect(() => {
-    const sync = () => setClasses(read())
-    window.addEventListener('ot-data-changed', sync)
-    window.addEventListener('storage', sync)
-    return () => { window.removeEventListener('ot-data-changed', sync); window.removeEventListener('storage', sync) }
-  }, [])
-  const archived = classes.filter(c => c.archivedAt)
-  const years = Object.entries(archived.reduce((acc, c) => { const year = c.academicYear || 'Diğer'; (acc[year] ||= []).push(c); return acc }, {})).sort((a, b) => b[0].localeCompare(a[0], 'tr'))
-  const restore = id => {
-    const next = read().map(c => { if (c.id !== id) return c; const copy = { ...c }; delete copy.archivedAt; return copy })
-    write(next); setClasses(next); window.dispatchEvent(new Event('ot-data-changed')); window.location.reload()
-  }
-  return <main className="content"><div className="page-head"><div><p className="eyebrow">Kayıt yönetimi</p><h1>Arşiv</h1><p className="muted">Arşivlenen sınıfları eğitim öğretim yılına göre yönet.</p></div></div><section className="card"><div className="section-head"><div><div className="section-title"><Archive size={18}/> Arşivlenen Sınıflar</div><p className="muted">Toplam {archived.length} sınıf</p></div></div><div className="lifecycle-list">{years.map(([year, items]) => <div key={year} className="lifecycle-year"><h3>{year}</h3>{items.map(c => <div className="lifecycle-row" key={c.id}><span><b>{c.name}</b><small>{c.students?.length || 0} öğrenci</small></span><button className="secondary" onClick={() => restore(c.id)}><ArchiveRestore size={14}/> Geri Al</button></div>)}</div>)}{!archived.length && <div className="empty">Arşiv boş.</div>}</div></section></main>
-}
+const KEY='ot-classes';const read=()=>{try{const v=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(v)?v:[]}catch{return[]}};const write=v=>localStorage.setItem(KEY,JSON.stringify(v))
+export default function ArchivePage(){const[classes,setClasses]=useState(read);useEffect(()=>{const sync=()=>setClasses(read());window.addEventListener('ot-data-changed',sync);window.addEventListener('storage',sync);return()=>{window.removeEventListener('ot-data-changed',sync);window.removeEventListener('storage',sync)}},[]);const archived=classes.filter(c=>c.archivedAt);const years=Object.entries(archived.reduce((acc,c)=>{const year=c.academicYear||'Diğer';(acc[year]||=[]).push(c);return acc},{})).sort((a,b)=>b[0].localeCompare(a[0],'tr'));const restore=id=>{const next=read().map(c=>{if(c.id!==id)return c;const copy={...c};delete copy.archivedAt;return copy});write(next);setClasses(next);window.dispatchEvent(new Event('ot-data-changed'));window.location.reload()};return <main className="content"><div className="page-head"><div><p className="eyebrow">Kayıt yönetimi</p><h1>Arşiv</h1><p className="muted">Arşivlenen sınıfları eğitim öğretim yılına göre yönet.</p></div></div><section className="card"><div className="section-head"><div><div className="section-title"><Archive size={18}/> Arşivlenen Sınıflar</div><p className="muted">Toplam {archived.length} sınıf</p></div></div><div className="lifecycle-list">{years.map(([year,items])=><div key={year} className="lifecycle-year"><h3>{year}</h3>{items.map(c=><div className="lifecycle-row" key={c.id}><span><b>{c.name}</b><small>{c.students?.length||0} öğrenci</small></span><button className="secondary" onClick={()=>restore(c.id)}><ArchiveRestore size={14}/> Geri Al</button></div>)}</div>)}{!archived.length&&<div className="empty">Arşiv boş.</div>}</div></section></main>}
