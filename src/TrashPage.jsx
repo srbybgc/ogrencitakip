@@ -20,7 +20,8 @@ const storagePaths = x => {
 const deleteStoragePaths = async paths => {
   const user = auth.currentUser
   if (!user || !paths.length) return
-  await Promise.all(paths.map(async path => {
+  const safePaths = paths.filter(path => typeof path === 'string' && path.startsWith(`users/${user.uid}/`))
+  await Promise.all(safePaths.map(async path => {
     try { await deleteObject(ref(storage, path)) }
     catch (err) { if (err?.code !== 'storage/object-not-found') throw err }
   }))
@@ -84,7 +85,9 @@ export default function TrashPage() {
     if(!window.confirm('Bu kaydı kalıcı olarak silmek istediğinizden emin misiniz?')) return
     setBusyDelete(true)
     try {
-      await deleteStoragePaths(storagePaths(x))
+      const otherPaths = new Set(trash.filter(y=>y.id!==x.id).flatMap(storagePaths))
+      const paths = storagePaths(x).filter(path=>!otherPaths.has(path))
+      await deleteStoragePaths(paths)
       setTrash(v=>v.filter(y=>y.id!==x.id))
       window.dispatchEvent(new Event('ot-data-changed'))
     } catch (err) {
