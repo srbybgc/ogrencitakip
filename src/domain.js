@@ -112,7 +112,7 @@ export function checkIntegrity(classes, groups, schedule, documents) {
   const classIds = new Set(sortedClasses.map(c => c.id))
   const studentIds = new Set(sortedClasses.flatMap(c => (Array.isArray(c.students) ? c.students : []).map(s => s.id)))
   const groupIds = new Set(safeGroups.map(g => g.id))
-  const validSchedule = safeSchedule.filter(s => classIds.has(s.classId))
+  const validSchedule = safeSchedule.filter(s => classIds.has(s.classId) && validTime(s.start) && validTime(s.end) && s.start < s.end)
   const validDocuments = safeDocuments.filter(d => {
     if (d.targetType === 'class') return classIds.has(d.targetId)
     if (d.targetType === 'student') return studentIds.has(d.targetId)
