@@ -32,6 +32,7 @@ export default function ArchivePage() {
     write(next)
     setClasses(next)
     window.dispatchEvent(new Event('ot-data-changed'))
+    window.location.reload()
   }
 
   return <main className="content">
