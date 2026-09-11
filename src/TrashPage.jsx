@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { deleteObject, ref } from 'firebase/storage'
 import { RotateCcw, Trash2 } from 'lucide-react'
+import { auth, storage } from './firebase'
 
 const K = { classes:'ot-classes', groups:'ot-groups', schedule:'ot-schedule', documents:'ot-documents', records:'ot-student-records' }
 const read = k => { try { const v = JSON.parse(localStorage.getItem(K[k] || k) || '[]'); return Array.isArray(v) ? v : [] } catch { return [] } }
@@ -8,8 +10,25 @@ const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2,8)}`
 const snap = () => ({ classes:read('classes'), groups:read('groups'), schedule:read('schedule'), documents:read('documents'), records:read('records') })
 const label = x => x.type==='class' ? `Sınıf · ${x.data.name}` : x.type==='student' ? `Öğrenci · ${x.data.firstName} ${x.data.lastName || ''}` : x.type==='group' ? `Grup · ${x.data.name}` : x.type==='lesson' ? `Ders · ${x.data.lesson || ''}` : `Belge · ${x.data.name || ''}`
 
+const storagePaths = x => {
+  const docs = []
+  if (x?.type === 'document' && x.data?.storagePath) docs.push(x.data.storagePath)
+  if (Array.isArray(x?.documents)) for (const d of x.documents) if (d?.storagePath) docs.push(d.storagePath)
+  return [...new Set(docs)]
+}
+
+const deleteStoragePaths = async paths => {
+  const user = auth.currentUser
+  if (!user || !paths.length) return
+  await Promise.all(paths.map(async path => {
+    try { await deleteObject(ref(storage, path)) }
+    catch (err) { if (err?.code !== 'storage/object-not-found') throw err }
+  }))
+}
+
 export default function TrashPage() {
   const [trash,setTrash] = useState(() => read('ot-trash'))
+  const [busyDelete,setBusyDelete] = useState(false)
   const prev = useRef(snap())
   const busy = useRef(false)
 
@@ -61,11 +80,38 @@ export default function TrashPage() {
     } finally { busy.current=false }
   }
 
+  const permanentlyDelete = async x => {
+    if(!window.confirm('Bu kaydı kalıcı olarak silmek istediğinizden emin misiniz?')) return
+    setBusyDelete(true)
+    try {
+      await deleteStoragePaths(storagePaths(x))
+      setTrash(v=>v.filter(y=>y.id!==x.id))
+      window.dispatchEvent(new Event('ot-data-changed'))
+    } catch (err) {
+      console.error(err)
+      window.alert('Dosya depolamasından silinemedi. Kayıt güvenliğiniz için çöp kutusundan kaldırılmadı.')
+    } finally { setBusyDelete(false) }
+  }
+
+  const emptyTrash = async () => {
+    if(!trash.length || !window.confirm('Çöp kutusundaki tüm kayıtları kalıcı olarak silmek istediğinizden emin misiniz?')) return
+    setBusyDelete(true)
+    try {
+      const paths=[...new Set(trash.flatMap(storagePaths))]
+      await deleteStoragePaths(paths)
+      setTrash([])
+      window.dispatchEvent(new Event('ot-data-changed'))
+    } catch (err) {
+      console.error(err)
+      window.alert('Bazı dosyalar depolamadan silinemedi. Çöp kutusu korunuyor.')
+    } finally { setBusyDelete(false) }
+  }
+
   return <main className="content">
     <div className="page-head"><div><p className="eyebrow">Kayıt yönetimi</p><h1>Çöp Kutusu</h1><p className="muted">Silinen kayıtları incele, geri yükle veya kalıcı olarak kaldır.</p></div></div>
     <section className="card">
-      <div className="section-head"><div><div className="section-title"><Trash2 size={18}/> Silinen Kayıtlar</div><p className="muted">Toplam {trash.length} kayıt</p></div>{trash.length>0&&<button className="danger-outline" onClick={()=>{if(confirm('Çöp kutusundaki tüm kayıtları kalıcı olarak silmek istediğinizden emin misiniz?'))setTrash([])}}>Çöp Kutusunu Boşalt</button>}</div>
-      <div className="lifecycle-list">{trash.slice().reverse().map(x=><div className="lifecycle-row" key={x.id}><span><b>{label(x)}</b><small>{new Date(x.deletedAt).toLocaleString('tr-TR')}</small></span><div className="row-actions"><button className="secondary" onClick={()=>restore(x)}><RotateCcw size={14}/> Geri Yükle</button><button className="icon-btn danger" title="Kalıcı sil" onClick={()=>{if(confirm('Bu kaydı kalıcı olarak silmek istediğinizden emin misiniz?'))setTrash(v=>v.filter(y=>y.id!==x.id))}}><Trash2 size={14}/></button></div></div>)}{!trash.length&&<div className="empty">Çöp kutusu boş.</div>}</div>
+      <div className="section-head"><div><div className="section-title"><Trash2 size={18}/> Silinen Kayıtlar</div><p className="muted">Toplam {trash.length} kayıt</p></div>{trash.length>0&&<button className="danger-outline" disabled={busyDelete} onClick={emptyTrash}>Çöp Kutusunu Boşalt</button>}</div>
+      <div className="lifecycle-list">{trash.slice().reverse().map(x=><div className="lifecycle-row" key={x.id}><span><b>{label(x)}</b><small>{new Date(x.deletedAt).toLocaleString('tr-TR')}</small></span><div className="row-actions"><button className="secondary" disabled={busyDelete} onClick={()=>restore(x)}><RotateCcw size={14}/> Geri Yükle</button><button className="icon-btn danger" disabled={busyDelete} title="Kalıcı sil" onClick={()=>permanentlyDelete(x)}><Trash2 size={14}/></button></div></div>)}{!trash.length&&<div className="empty">Çöp kutusu boş.</div>}</div>
     </section>
   </main>
 }
