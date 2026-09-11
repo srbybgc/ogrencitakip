@@ -5,6 +5,7 @@ import AuthGate from './AuthGate'
 import StudentOverlayFixed from './StudentOverlayFixed'
 import UXFixes from './UXFixes'
 import RuntimeFixes from './RuntimeFixes'
+import MenuFixes from './MenuFixes'
 import AppErrorBoundary from './AppErrorBoundary'
 import './firebase'
 import './styles.css'
@@ -30,6 +31,7 @@ ReactDOM.createRoot(root).render(
         <StudentOverlayFixed />
         <UXFixes />
         <RuntimeFixes />
+        <MenuFixes />
       </AuthGate>
     </AppErrorBoundary>
   </React.StrictMode>,
