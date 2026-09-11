@@ -18,13 +18,26 @@ export default function TrashPage() {
     const tick = () => {
       if (busy.current) return
       const n=snap(), p=prev.current, t=read('ot-trash'), seen=new Set(t.map(x=>`${x.type}:${x.data?.id}`)), add=[]
+      const nested={groups:new Set(),schedule:new Set(),documents:new Set(),records:new Set()}
       const put=(type,data,extra={})=>{ if(!data?.id || seen.has(`${type}:${data.id}`)) return; seen.add(`${type}:${data.id}`); add.push({id:uid(),type,data,...extra,deletedAt:new Date().toISOString()}) }
       const nc=new Set(n.classes.map(x=>x.id))
-      for(const c of p.classes) if(!nc.has(c.id)) put('class',c,{groups:p.groups.filter(g=>(g.classIds||[]).includes(c.id)),schedule:p.schedule.filter(s=>s.classId===c.id),documents:p.documents.filter(d=>(d.targetType==='class'&&d.targetId===c.id)||(d.targetType==='student'&&(c.students||[]).some(s=>d.targetId===s.id))),records:p.records.filter(r=>(c.students||[]).some(s=>r.studentId===s.id))})
+      for(const c of p.classes) if(!nc.has(c.id)) {
+        const classGroups=p.groups.filter(g=>(g.classIds||[]).includes(c.id))
+        const classSchedule=p.schedule.filter(s=>s.classId===c.id)
+        const classDocuments=p.documents.filter(d=>(d.targetType==='class'&&d.targetId===c.id)||(d.targetType==='student'&&(c.students||[]).some(s=>d.targetId===s.id)))
+        const classRecords=p.records.filter(r=>(c.students||[]).some(s=>r.studentId===s.id))
+        classGroups.forEach(x=>nested.groups.add(x.id)); classSchedule.forEach(x=>nested.schedule.add(x.id)); classDocuments.forEach(x=>nested.documents.add(x.id)); classRecords.forEach(x=>nested.records.add(x.id))
+        put('class',c,{groups:classGroups,schedule:classSchedule,documents:classDocuments,records:classRecords})
+      }
       const ns=new Set(n.classes.flatMap(c=>(c.students||[]).map(s=>`${c.id}:${s.id}`)))
-      for(const c of p.classes) for(const st of c.students||[]) if(!ns.has(`${c.id}:${st.id}`) && nc.has(c.id)) put('student',st,{classId:c.id,documents:p.documents.filter(d=>d.targetType==='student'&&d.targetId===st.id),records:p.records.filter(r=>r.studentId===st.id)})
-      const cmp=(type,a,b)=>{const ids=new Set(b.map(x=>x.id));for(const x of a)if(!ids.has(x.id))put(type,x)}
-      cmp('group',p.groups,n.groups); cmp('lesson',p.schedule,n.schedule); cmp('document',p.documents,n.documents)
+      for(const c of p.classes) for(const st of c.students||[]) if(!ns.has(`${c.id}:${st.id}`) && nc.has(c.id)) {
+        const studentDocuments=p.documents.filter(d=>d.targetType==='student'&&d.targetId===st.id)
+        const studentRecords=p.records.filter(r=>r.studentId===st.id)
+        studentDocuments.forEach(x=>nested.documents.add(x.id)); studentRecords.forEach(x=>nested.records.add(x.id))
+        put('student',st,{classId:c.id,documents:studentDocuments,records:studentRecords})
+      }
+      const cmp=(type,a,b,skip=new Set())=>{const ids=new Set(b.map(x=>x.id));for(const x of a)if(!ids.has(x.id)&&!skip.has(x.id))put(type,x)}
+      cmp('group',p.groups,n.groups,nested.groups); cmp('lesson',p.schedule,n.schedule,nested.schedule); cmp('document',p.documents,n.documents,nested.documents)
       if(add.length) setTrash(v=>[...v,...add]); prev.current=n
     }
     const timer=setInterval(tick,700)
