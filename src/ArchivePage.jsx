@@ -19,10 +19,5 @@ export default function ArchivePage() {
     const next = read().map(c => { if (c.id !== id) return c; const copy = { ...c }; delete copy.archivedAt; return copy })
     write(next); setClasses(next); window.dispatchEvent(new Event('ot-data-changed')); window.location.reload()
   }
-  return <main className="content">
-    <div className="page-head"><div><p className="eyebrow">Kayıt yönetimi</p><h1>Arşiv</h1><p className="muted">Arşivlenen sınıfları eğitim öğretim yılına göre yönet.</p></div></div>
-    <section className="card"><div className="section-head"><div><div className="section-title"><Archive size={18}/> Arşivlenen Sınıflar</div><p className="muted">Toplam {archived.length} sınıf</p></div></div>
-      <div className="lifecycle-list">{years.map(([year, items]) => <div key={year} className="lifecycle-year"><h3>{year}</h3>{items.map(c => <div className="lifecycle-row" key={c.id}><span><b>{c.name}</b><small>{c.students?.length || 0} öğrenci</small></span><button className="secondary" onClick={() => restore(c.id)}><ArchiveRestore size={14}/> Geri Al</button></div>)}</div>)}{!archived.length && <div className="empty">Arşiv boş.</div>}</div>
-    </section>
-  </main>
+  return <main className="content"><div className="page-head"><div><p className="eyebrow">Kayıt yönetimi</p><h1>Arşiv</h1><p className="muted">Arşivlenen sınıfları eğitim öğretim yılına göre yönet.</p></div></div><section className="card"><div className="section-head"><div><div className="section-title"><Archive size={18}/> Arşivlenen Sınıflar</div><p className="muted">Toplam {archived.length} sınıf</p></div></div><div className="lifecycle-list">{years.map(([year, items]) => <div key={year} className="lifecycle-year"><h3>{year}</h3>{items.map(c => <div className="lifecycle-row" key={c.id}><span><b>{c.name}</b><small>{c.students?.length || 0} öğrenci</small></span><button className="secondary" onClick={() => restore(c.id)}><ArchiveRestore size={14}/> Geri Al</button></div>)}</div>)}{!archived.length && <div className="empty">Arşiv boş.</div>}</div></section></main>
 }
