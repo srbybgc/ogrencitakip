@@ -9,9 +9,21 @@ import './styles.css'
 import './pastelTheme.css'
 import { repairStoredData } from './integrity'
 
-repairStoredData()
+// Data repair must never prevent React from mounting. A malformed legacy
+// localStorage value should be recoverable without leaving the app blank.
+try {
+  repairStoredData()
+} catch (error) {
+  console.error('Yerel veri onarımı atlandı:', error)
+}
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const root = document.getElementById('root')
+
+if (!root) {
+  throw new Error('Uygulama kökü (#root) bulunamadı.')
+}
+
+ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <AuthGate>
       <App />
