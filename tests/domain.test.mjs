@@ -89,13 +89,15 @@ test('öğrenci silinince yalnızca o öğrenciye bağlı belgeler kaldırılır
   assert.deepEqual(removeStudentReferences(docs, 's1').map(x => x.id), ['d2', 'd3'])
 })
 
-test('yetim ders ve belgeler bütünlük kontrolünde temizlenir', () => {
+test('yetim ve bozuk saatli dersler bütünlük kontrolünde temizlenir', () => {
   const result = checkIntegrity(
     [{ id: 'c1', name: '3-A', students: [{ id: 's1', firstName: 'Ada', lastName: 'Kaya' }] }],
     [{ id: 'g1', name: 'Grup', classIds: ['c1'] }],
     [
       { id: 'valid', day: 0, start: '09:00', end: '09:40', classId: 'c1', lesson: 'Türkçe' },
       { id: 'orphan', day: 0, start: '10:00', end: '10:40', classId: 'deleted', lesson: 'Fen' },
+      { id: 'bad-format', day: 0, start: '9:00', end: '10:00', classId: 'c1', lesson: 'Bozuk' },
+      { id: 'bad-range', day: 0, start: '11:00', end: '10:00', classId: 'c1', lesson: 'Bozuk 2' },
     ],
     [
       { id: 'student', name: 'Karne', targetType: 'student', targetId: 's1' },
