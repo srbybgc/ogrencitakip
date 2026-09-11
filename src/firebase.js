@@ -4,12 +4,12 @@ import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyAsEhRXzLlGgOzMfvzwOMtqLGxU9uxv_AM',
-  authDomain: 'ogrenci-b647e.firebaseapp.com',
-  projectId: 'ogrenci-b647e',
-  storageBucket: 'ogrenci-b647e.firebasestorage.app',
-  messagingSenderId: '866993390820',
-  appId: '1:866993390820:web:b78e6be210eab9e68258f1',
+  apiKey: 'AIzaSyA2euqIsoCHzAg3GXJu22wt7OQhJxwvOcY',
+  authDomain: 'elifokul.firebaseapp.com',
+  projectId: 'elifokul',
+  storageBucket: 'elifokul.firebasestorage.app',
+  messagingSenderId: '392930794143',
+  appId: '1:392930794143:web:88c1d3c07b92ebd827e0aa',
 }
 
 const app = initializeApp(firebaseConfig)
